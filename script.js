@@ -2062,49 +2062,6 @@ function renderChart() {
       .filter(({ person }) => isAvailableForRange(person, start, end))
       .map(({ index }) => index);
 
-  const splitCommonBand = (start, end) => {
-    const boundaries = [start, end];
-
-    if (state.meetingLength === AVAILABILITY_STEP) {
-      for (
-        let minute = Math.ceil(start / AVAILABILITY_STEP) * AVAILABILITY_STEP;
-        minute < end;
-        minute += AVAILABILITY_STEP
-      ) {
-        if (minute > start) boundaries.push(minute);
-      }
-    }
-
-    if (selectedRange) {
-      const [selectedStart, selectedEnd] = selectedRange;
-      if (selectedStart > start && selectedStart < end) boundaries.push(selectedStart);
-      if (selectedEnd > start && selectedEnd < end) boundaries.push(selectedEnd);
-    }
-
-    if (confirmedRange) {
-      const [confirmedStart, confirmedEnd] = confirmedRange;
-      if (confirmedStart > start && confirmedStart < end) boundaries.push(confirmedStart);
-      if (confirmedEnd > start && confirmedEnd < end) boundaries.push(confirmedEnd);
-    }
-
-    const sorted = [...new Set(boundaries)].sort((a, b) => a - b);
-
-    return sorted.slice(0, -1).map((segmentStart, index) => {
-      const segmentEnd = sorted[index + 1];
-      const midpoint = (segmentStart + segmentEnd) / 2;
-      const isSelected = selectedRange &&
-        midpoint >= selectedRange[0] && midpoint < selectedRange[1];
-      const isConfirmed = confirmedRange &&
-        midpoint >= confirmedRange[0] && midpoint < confirmedRange[1];
-
-      return {
-        start: segmentStart,
-        end: segmentEnd,
-        type: isConfirmed ? "confirmed-base" : isSelected ? "selected" : "common"
-      };
-    });
-  };
-
   svg.style.setProperty("--ring-width", `${ringWidth}px`);
 
   [0, 180, 360, 540].forEach(minute => {
@@ -2282,22 +2239,36 @@ function renderChart() {
   };
 
   common.forEach(([start, end]) => {
-    splitCommonBand(start, end).forEach(segment => {
-      if (segment.end <= segment.start) return;
+    const baseSegment = { start, end, type: "common" };
+    appendCommonBand(baseSegment, requiredInnerEdge, outerEdge);
 
-      appendCommonBand(segment, requiredInnerEdge, outerEdge);
+    referenceRingIndexesForRange(start, end).forEach(index => {
+      const { inner, outer } = ringEdgesForIndex(index);
+      appendCommonBand(baseSegment, inner, outer, "reference-band");
+    });
 
-      referenceRingIndexesForRange(segment.start, segment.end).forEach(index => {
+    [
+      selectedRange ? { start: selectedRange[0], end: selectedRange[1], type: "selected" } : null,
+      confirmedRange ? { start: confirmedRange[0], end: confirmedRange[1], type: "confirmed-base" } : null
+    ].filter(Boolean).forEach(segment => {
+      const overlayStart = Math.max(start, segment.start);
+      const overlayEnd = Math.min(end, segment.end);
+      if (overlayEnd <= overlayStart) return;
+
+      const overlaySegment = {
+        start: overlayStart,
+        end: overlayEnd,
+        type: segment.type
+      };
+      appendCommonBand(overlaySegment, requiredInnerEdge, outerEdge);
+
+      referenceRingIndexesForRange(overlayStart, overlayEnd).forEach(index => {
         const { inner, outer } = ringEdgesForIndex(index);
-        appendCommonBand(segment, inner, outer, "reference-band");
+        appendCommonBand(overlaySegment, inner, outer, "reference-band");
       });
     });
 
     appendThirtyMinuteDividers(svg, start, end, requiredInnerEdge, outerEdge);
-    referenceRingIndexesForRange(start, end).forEach(index => {
-      const { inner, outer } = ringEdgesForIndex(index);
-      appendThirtyMinuteDividers(svg, start, end, inner, outer);
-    });
   });
 
   if (confirmedRange) {
