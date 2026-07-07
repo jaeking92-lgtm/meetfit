@@ -1,4 +1,5 @@
-const MEETING_LENGTH = 60;
+const DEFAULT_MEETING_LENGTH = 60;
+const MEETING_LENGTH_OPTIONS = [30, 60, 90, 120];
 const START_OF_DAY = 9 * 60;
 const WORK_MINUTES = 9 * 60;
 const PREFERRED_START = 14 * 60 - START_OF_DAY;
@@ -10,6 +11,21 @@ const POST_LUNCH_END = 14 * 60 - START_OF_DAY;
 const AVAILABILITY_STEP = 30;
 const AVAILABILITY_SLOT_COUNT = WORK_MINUTES / AVAILABILITY_STEP;
 const MEETING_SHARE_URL = "meetfit.app/m/ob-2026-flow";
+const AVAILABILITY_PAINT_MODES = {
+  meeting: "회의",
+  focus: "집중업무",
+  travel: "출장",
+  vacation: "휴가",
+  lunch: "점심"
+};
+const AVAILABILITY_PAINT_KEYS = Object.keys(AVAILABILITY_PAINT_MODES);
+const AVAILABILITY_NOTE_PLACEHOLDERS = {
+  meeting: "미팅 제목",
+  focus: "업무명",
+  travel: "출장명",
+  vacation: "휴가명",
+  lunch: "점심"
+};
 
 function iconMarkup(name, className = "ui-icon") {
   return `<svg class="${className}" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
@@ -33,6 +49,7 @@ const CHART = {
   startAngle: 180,
   totalAngle: 270
 };
+let scheduleLabelPathId = 0;
 
 const days = [
   { key: "mon", label: "월", date: "6/30", full: "월요일 6/30" },
@@ -291,6 +308,7 @@ const state = {
   selectedIds: ["p1", "p2", "p3", "p4"],
   selectedDay: "wed",
   selectedCandidate: null,
+  meetingLength: DEFAULT_MEETING_LENGTH,
   showPersonal: true,
   showAllCandidates: false,
   mobileCandidatesOpen: false,
@@ -299,9 +317,14 @@ const state = {
   confirmModalStep: "confirm",
   myAvailabilitySaved: false,
   myAvailability: null,
+  myAvailabilityPaints: null,
+  myAvailabilityNotes: null,
   availabilityDraft: null,
+  availabilityDraftNotes: null,
   availabilityDragging: false,
-  availabilityDragMode: true,
+  availabilityDragMode: "meeting",
+  availabilityPaintMode: "meeting",
+  editingNoteTarget: null,
   reasonsExpanded: false,
   displayGuideExpanded: false,
   availabilityFeedback: false,
@@ -334,6 +357,7 @@ const els = {
   mobileCandidateToggleLabel: document.getElementById("mobileCandidateToggleLabel"),
   selectionCount: document.getElementById("selectionCount"),
   selectedSummary: document.getElementById("selectedSummary"),
+  durationOptions: document.querySelectorAll(".duration-option"),
   displayGuide: document.getElementById("displayGuide"),
   displayGuideToggle: document.getElementById("displayGuideToggle"),
   displayGuideBody: document.getElementById("displayGuideBody"),
@@ -364,6 +388,15 @@ const els = {
   availabilityModalClose: document.getElementById("availabilityModalClose"),
   availabilityGrid: document.getElementById("availabilityGrid"),
   availabilitySummary: document.getElementById("availabilitySummary"),
+  availabilityPaintChoices: document.querySelectorAll(".paint-choice"),
+  noteModal: document.getElementById("noteModal"),
+  noteModalClose: document.getElementById("noteModalClose"),
+  noteModalType: document.getElementById("noteModalType"),
+  noteTitleInput: document.getElementById("noteTitleInput"),
+  notePeopleInput: document.getElementById("notePeopleInput"),
+  notePlaceInput: document.getElementById("notePlaceInput"),
+  noteModalCancel: document.getElementById("noteModalCancel"),
+  noteModalSave: document.getElementById("noteModalSave"),
   selectWorkHoursBtn: document.getElementById("selectWorkHoursBtn"),
   excludeLunchBtn: document.getElementById("excludeLunchBtn"),
   clearAvailabilityBtn: document.getElementById("clearAvailabilityBtn"),
@@ -416,11 +449,74 @@ function timeRangeLabel(start, end) {
   return `${minutesToLabel(start)} - ${minutesToLabel(end)}`;
 }
 
+function durationLabel(minutes = state.meetingLength) {
+  if (minutes < 60) return `${minutes}분`;
+
+  const hours = Math.floor(minutes / 60);
+  const remaining = minutes % 60;
+  return remaining ? `${hours}시간 ${remaining}분` : `${hours}시간`;
+}
+
 function confirmedCandidateForCurrentWeek() {
   return state.confirmedCandidate &&
     state.confirmedCandidate.weekOffset === state.weekOffset
     ? state.confirmedCandidate
     : null;
+}
+
+function slotPaintMode(value) {
+  return AVAILABILITY_PAINT_KEYS.includes(value) ? value : null;
+}
+
+function isAvailableSlot(value) {
+  return slotPaintMode(value) === null;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function emptyNoteDetail() {
+  return {
+    title: "",
+    people: "",
+    place: ""
+  };
+}
+
+function normalizeNoteDetail(value) {
+  if (!value) return emptyNoteDetail();
+  if (typeof value === "string") {
+    return {
+      ...emptyNoteDetail(),
+      title: value
+    };
+  }
+
+  return {
+    title: value.title || "",
+    people: value.people || "",
+    place: value.place || ""
+  };
+}
+
+function noteTitle(value, fallback = "") {
+  const detail = normalizeNoteDetail(value);
+  return detail.title || fallback;
+}
+
+function noteSummary(value) {
+  const detail = normalizeNoteDetail(value);
+  return [detail.people, detail.place].filter(Boolean).join(" · ");
+}
+
+function hasNoteDetail(value) {
+  const detail = normalizeNoteDetail(value);
+  return Boolean(detail.title || detail.people || detail.place);
 }
 
 function attendeeSummary() {
@@ -431,15 +527,36 @@ function attendeeSummary() {
   };
 }
 
-function blankAvailabilityDraft(value = false) {
+function blankAvailabilityDraft(value = null) {
+  const normalized = slotPaintMode(value);
   return Object.fromEntries(
-    days.map(day => [day.key, Array.from({ length: AVAILABILITY_SLOT_COUNT }, () => value)])
+    days.map(day => [day.key, Array.from({ length: AVAILABILITY_SLOT_COUNT }, () => normalized)])
   );
 }
 
-function cloneDraft(draft) {
+function cloneAvailabilityDraft(draft) {
   return Object.fromEntries(
-    days.map(day => [day.key, [...draft[day.key]]])
+    days.map(day => [
+      day.key,
+      (draft?.[day.key] || Array.from({ length: AVAILABILITY_SLOT_COUNT }, () => null))
+        .map(slot => slot === "available" ? null : slotPaintMode(slot))
+    ])
+  );
+}
+
+function blankAvailabilityNotes() {
+  return Object.fromEntries(
+    days.map(day => [day.key, Array.from({ length: AVAILABILITY_SLOT_COUNT }, emptyNoteDetail)])
+  );
+}
+
+function cloneAvailabilityNotes(notes) {
+  return Object.fromEntries(
+    days.map(day => [
+      day.key,
+      (notes?.[day.key] || Array.from({ length: AVAILABILITY_SLOT_COUNT }, emptyNoteDetail))
+        .map(normalizeNoteDetail)
+    ])
   );
 }
 
@@ -464,7 +581,9 @@ function slotsToIntervals(slots) {
   const intervals = [];
   let startIndex = null;
 
-  slots.forEach((isAvailable, index) => {
+  slots.forEach((slot, index) => {
+    const isAvailable = isAvailableSlot(slot);
+
     if (isAvailable && startIndex === null) {
       startIndex = index;
     }
@@ -477,6 +596,11 @@ function slotsToIntervals(slots) {
   });
 
   return intervals;
+}
+
+function availabilityIntervalsToDraft(availability) {
+  const availableSlots = intervalsToSlots(availability);
+  return availableSlots.map(isAvailable => isAvailable ? null : "meeting");
 }
 
 function draftToAvailability(draft) {
@@ -560,6 +684,56 @@ function createSvg(tag, attrs = {}) {
     node.setAttribute(key, value);
   });
   return node;
+}
+
+function compactScheduleTitle(title) {
+  const cleanTitle = String(title || "일정").replace(/\s+/g, " ").trim();
+  return cleanTitle.length > 8 ? `${cleanTitle.slice(0, 8)}...` : cleanTitle;
+}
+
+function createScheduleLabel(person, item, radius) {
+  if (item.isGlobal || item.end - item.start < 60) return null;
+
+  const pathId = `schedule-label-path-${scheduleLabelPathId += 1}`;
+  const group = createSvg("g", {
+    class: "arc-schedule-label"
+  });
+  const labelPath = createSvg("path", {
+    id: pathId,
+    d: describeArc(
+      CHART.cx,
+      CHART.cy,
+      radius,
+      angleForMinute(item.start),
+      angleForMinute(item.end)
+    ),
+    class: "arc-schedule-label-path"
+  });
+  const titleText = createSvg("text", {
+    class: "arc-schedule-title",
+    dy: "-3"
+  });
+  const titlePath = createSvg("textPath", {
+    href: `#${pathId}`,
+    startOffset: "50%",
+    "text-anchor": "middle"
+  });
+  const timeText = createSvg("text", {
+    class: "arc-schedule-time",
+    dy: "9"
+  });
+  const timePath = createSvg("textPath", {
+    href: `#${pathId}`,
+    startOffset: "50%",
+    "text-anchor": "middle"
+  });
+
+  titlePath.textContent = compactScheduleTitle(item.title);
+  timePath.textContent = timeRangeLabel(item.start, item.end);
+  titleText.appendChild(titlePath);
+  timeText.appendChild(timePath);
+  group.append(labelPath, titleText, timeText);
+  return group;
 }
 
 function ringLayout(ringCount) {
@@ -650,29 +824,40 @@ function availabilityFor(person, dayKey) {
   return baseAvailabilityFor(person, dayKey);
 }
 
-function myPerson() {
-  return people.find(person => person.isMe) || people[0];
-}
-
 function currentMyAvailabilityDraft() {
-  const me = myPerson();
+  if (state.myAvailabilitySaved && state.myAvailabilityPaints) {
+    return cloneAvailabilityDraft(state.myAvailabilityPaints);
+  }
 
   if (state.myAvailabilitySaved && state.myAvailability) {
     return Object.fromEntries(
-      days.map(day => [day.key, intervalsToSlots(state.myAvailability[day.key] || [])])
+      days.map(day => [
+        day.key,
+        availabilityIntervalsToDraft(state.myAvailability[day.key] || [])
+      ])
     );
   }
 
-  return Object.fromEntries(
-    days.map(day => [day.key, intervalsToSlots(baseAvailabilityFor(me, day.key))])
-  );
+  return blankAvailabilityDraft(null);
+}
+
+function currentMyAvailabilityNotes() {
+  if (state.myAvailabilitySaved && state.myAvailabilityNotes) {
+    return cloneAvailabilityNotes(state.myAvailabilityNotes);
+  }
+
+  return blankAvailabilityNotes();
 }
 
 function setDraftDay(dayKey, value) {
-  state.availabilityDraft[dayKey] = state.availabilityDraft[dayKey].map(() => value);
+  const normalized = slotPaintMode(value);
+  state.availabilityDraft[dayKey] = state.availabilityDraft[dayKey].map(() => normalized);
+  state.availabilityDraftNotes[dayKey] = state.availabilityDraftNotes[dayKey].map(() => emptyNoteDetail());
 }
 
 function setDraftLunch(value) {
+  const normalized = slotPaintMode(value);
+
   days.forEach(day => {
     for (
       let minute = LUNCH_START;
@@ -680,100 +865,87 @@ function setDraftLunch(value) {
       minute += AVAILABILITY_STEP
     ) {
       const index = minute / AVAILABILITY_STEP;
-      state.availabilityDraft[day.key][index] = value;
+      state.availabilityDraft[day.key][index] = normalized;
+      state.availabilityDraftNotes[day.key][index] = normalized === "lunch"
+        ? { ...emptyNoteDetail(), title: "점심" }
+        : emptyNoteDetail();
     }
   });
 }
 
 function selectedDraftMinutes() {
   return days.reduce((total, day) => {
-    return total + state.availabilityDraft[day.key].filter(Boolean).length * AVAILABILITY_STEP;
+    return total + state.availabilityDraft[day.key].filter(isAvailableSlot).length * AVAILABILITY_STEP;
   }, 0);
 }
 
 function renderAvailabilitySummary() {
   const selectedMinutes = selectedDraftMinutes();
   const availableDays = days.filter(day =>
-    state.availabilityDraft[day.key].some(Boolean)
+    state.availabilityDraft[day.key].some(isAvailableSlot)
   ).length;
+  const blockedSlots = days.reduce((total, day) => {
+    return total + state.availabilityDraft[day.key].filter(slot => {
+      const mode = slotPaintMode(slot);
+      return Boolean(mode);
+    }).length;
+  }, 0);
   const hours = Math.floor(selectedMinutes / 60);
   const minutes = selectedMinutes % 60;
   const durationLabel = `${hours}시간${minutes ? ` ${minutes}분` : ""}`;
 
-  els.availabilitySummary.textContent =
-    `${availableDays}일에 ${durationLabel} 선택됨 · 점심시간은 추천 계산에서 제외돼요.`;
+  if (!blockedSlots) {
+    els.availabilitySummary.textContent = `가능 5일 · ${durationLabel}`;
+    return;
+  }
+
+  const blockedLabel = blockedSlots ? ` · 일정 표시 ${blockedSlots}칸` : "";
+  els.availabilitySummary.textContent = `가능 ${availableDays}일 · ${durationLabel}${blockedLabel}`;
 }
 
-function updateDraftCell(cell, isAvailable) {
+function updateDraftCell(cell, paintMode) {
   const { day, slot } = cell.dataset;
-  state.availabilityDraft[day][Number(slot)] = isAvailable;
-  cell.setAttribute("aria-pressed", String(isAvailable));
+  const slotIndex = Number(slot);
+  const nextMode = slotPaintMode(paintMode);
+  state.availabilityDraft[day][slotIndex] = nextMode;
+  state.availabilityDraftNotes[day][slotIndex] = nextMode === "lunch"
+    ? { ...emptyNoteDetail(), title: "점심" }
+    : emptyNoteDetail();
+  cell.setAttribute("aria-pressed", String(Boolean(nextMode)));
   refreshAvailabilityCellStyles(day);
   renderAvailabilitySummary();
 }
 
-function eventCategoryForTitle(item) {
-  const title = item.title || "";
-
-  if (item.isGlobal || title.includes("점심")) return "lunch";
-  if (/휴가|연차|반차|오프/.test(title)) return "vacation";
-  if (/출장|외근|외부|파트너|대행사|고객 콜|고객 미팅/.test(title)) return "travel";
-  if (/집중|작업|정리|문서|리포트|QA|확인|에셋|분석|티켓|대응|운영|배포 준비|마감/.test(title)) return "focus";
-  return "meeting";
-}
-
-function eventForAvailabilitySlot(dayKey, index) {
-  const minute = index * AVAILABILITY_STEP;
-  const midpoint = minute + AVAILABILITY_STEP / 2;
-  const event = baseBlockedScheduleFor(myPerson(), dayKey).find(item =>
-    midpoint >= item.start && midpoint < item.end
-  );
-
-  if (!event) return null;
-
-  const category = eventCategoryForTitle(event);
-  const prevMidpoint = midpoint - AVAILABILITY_STEP;
-  const nextMidpoint = midpoint + AVAILABILITY_STEP;
-  const hasPrevious = prevMidpoint >= 0 &&
-    prevMidpoint >= event.start &&
-    prevMidpoint < event.end;
-  const hasNext = nextMidpoint < WORK_MINUTES &&
-    nextMidpoint >= event.start &&
-    nextMidpoint < event.end;
-
-  return {
-    title: event.title,
-    category,
-    isStart: !hasPrevious,
-    isEnd: !hasNext,
-    isMiddle: hasPrevious && hasNext
-  };
-}
-
-function availabilityEventClasses(event) {
-  if (!event) return "";
-
-  return [
-    "event",
-    `event-${event.category}`,
-    event.isStart ? "event-start" : "",
-    event.isEnd ? "event-end" : "",
-    event.isMiddle ? "event-middle" : ""
-  ].filter(Boolean).join(" ");
-}
-
 function availabilityCellClasses(dayKey, index) {
   const slots = state.availabilityDraft[dayKey];
-  const selected = slots[index];
-  const prevSelected = slots[index - 1] || false;
-  const nextSelected = slots[index + 1] || false;
+  const currentMode = slotPaintMode(slots[index]);
+  const prevMode = slotPaintMode(slots[index - 1]);
+  const nextMode = slotPaintMode(slots[index + 1]);
 
   return [
-    selected ? "available" : "",
-    selected && !prevSelected ? "range-start" : "",
-    selected && !nextSelected ? "range-end" : "",
-    selected && prevSelected && nextSelected ? "range-middle" : ""
+    currentMode ? "filled" : "",
+    currentMode ? `paint-${currentMode}` : "",
+    currentMode && currentMode !== prevMode ? "range-start" : "",
+    currentMode && currentMode !== nextMode ? "range-end" : "",
+    currentMode && currentMode === prevMode && currentMode === nextMode ? "range-middle" : ""
   ].filter(Boolean).join(" ");
+}
+
+function availabilityEventMarkup({ mode, title, rangeLabel, note }) {
+  const detail = normalizeNoteDetail(note);
+  const eventRows = [
+    `<span class="availability-event-title">${escapeHtml(title)}</span>`,
+    rangeLabel ? `<span class="availability-event-row availability-event-time">${escapeHtml(rangeLabel)}</span>` : "",
+    detail.people ? `<span class="availability-event-row"><b>인원</b>${escapeHtml(detail.people)}</span>` : "",
+    detail.place ? `<span class="availability-event-row"><b>장소</b>${escapeHtml(detail.place)}</span>` : ""
+  ].filter(Boolean).join("");
+
+  return `
+    <span class="availability-event-card">
+      ${eventRows}
+    </span>
+    ${mode === "lunch" ? "" : `<span class="availability-note-trigger">${hasNoteDetail(note) ? "수정" : "내용 입력"}</span>`}
+  `;
 }
 
 function refreshAvailabilityCellStyles(dayKey = null) {
@@ -783,14 +955,107 @@ function refreshAvailabilityCellStyles(dayKey = null) {
 
   els.availabilityGrid.querySelectorAll(selector).forEach(cell => {
     const index = Number(cell.dataset.slot);
-    const isSelected = state.availabilityDraft[cell.dataset.day][index];
+    const mode = slotPaintMode(state.availabilityDraft[cell.dataset.day][index]);
+    const prevMode = slotPaintMode(state.availabilityDraft[cell.dataset.day][index - 1]);
+    const nextMode = slotPaintMode(state.availabilityDraft[cell.dataset.day][index + 1]);
 
-    cell.classList.toggle("available", isSelected);
-    cell.classList.toggle("range-start", isSelected && !(state.availabilityDraft[cell.dataset.day][index - 1] || false));
-    cell.classList.toggle("range-end", isSelected && !(state.availabilityDraft[cell.dataset.day][index + 1] || false));
-    cell.classList.toggle("range-middle", isSelected && Boolean(state.availabilityDraft[cell.dataset.day][index - 1]) && Boolean(state.availabilityDraft[cell.dataset.day][index + 1]));
-    cell.setAttribute("aria-pressed", String(isSelected));
+    cell.classList.toggle("filled", Boolean(mode));
+    AVAILABILITY_PAINT_KEYS.forEach(key => {
+      cell.classList.toggle(`paint-${key}`, mode === key);
+    });
+    cell.classList.toggle("range-start", Boolean(mode) && mode !== prevMode);
+    cell.classList.toggle("range-end", Boolean(mode) && mode !== nextMode);
+    cell.classList.toggle("range-middle", Boolean(mode) && mode === prevMode && mode === nextMode);
+    cell.setAttribute("aria-pressed", String(Boolean(mode)));
+    const note = state.availabilityDraftNotes?.[cell.dataset.day]?.[index] || "";
+    const title = noteTitle(note, AVAILABILITY_PAINT_MODES[mode]);
+    const summary = noteSummary(note);
+    cell.classList.toggle("has-detail", Boolean(summary));
+    const showNote = mode && mode !== prevMode;
+    if (showNote) {
+      const range = noteRangeForCell(cell.dataset.day, index);
+      const rangeLabel = range
+        ? timeRangeLabel(range.start * AVAILABILITY_STEP, range.end * AVAILABILITY_STEP)
+        : "";
+      cell.style.setProperty("--event-slots", range ? String(range.end - range.start) : "1");
+      cell.innerHTML = availabilityEventMarkup({ mode, title, rangeLabel, note });
+    } else {
+      cell.style.removeProperty("--event-slots");
+      cell.innerHTML = "";
+    }
+    cell.setAttribute(
+      "aria-label",
+      cell.dataset.labelBase + (mode ? ` ${title}${summary ? ` ${summary}` : ""}` : " 빈 시간")
+    );
   });
+}
+
+function renderAvailabilityPaintChoices() {
+  els.availabilityPaintChoices.forEach(button => {
+    const active = button.dataset.paintMode === state.availabilityPaintMode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
+}
+
+function noteRangeForCell(dayKey, slotIndex) {
+  const mode = slotPaintMode(state.availabilityDraft[dayKey][slotIndex]);
+  if (!mode) return null;
+
+  let start = slotIndex;
+  let end = slotIndex + 1;
+
+  while (start > 0 && slotPaintMode(state.availabilityDraft[dayKey][start - 1]) === mode) {
+    start -= 1;
+  }
+
+  while (
+    end < AVAILABILITY_SLOT_COUNT &&
+    slotPaintMode(state.availabilityDraft[dayKey][end]) === mode
+  ) {
+    end += 1;
+  }
+
+  return { dayKey, mode, start, end };
+}
+
+function openNoteModal(dayKey, slotIndex) {
+  const target = noteRangeForCell(dayKey, slotIndex);
+  if (!target || target.mode === "lunch") return;
+
+  state.editingNoteTarget = target;
+  const existingNote = normalizeNoteDetail(state.availabilityDraftNotes[dayKey][target.start]);
+  els.noteModalType.textContent = AVAILABILITY_PAINT_MODES[target.mode];
+  els.noteTitleInput.placeholder = AVAILABILITY_NOTE_PLACEHOLDERS[target.mode] || "미팅 제목";
+  els.noteTitleInput.value = existingNote.title;
+  els.notePeopleInput.value = existingNote.people;
+  els.notePlaceInput.value = existingNote.place;
+  els.noteModal.hidden = false;
+  els.noteTitleInput.focus();
+  els.noteTitleInput.select();
+}
+
+function closeNoteModal() {
+  els.noteModal.hidden = true;
+  state.editingNoteTarget = null;
+}
+
+function saveNoteModal() {
+  const target = state.editingNoteTarget;
+  if (!target) return;
+
+  const note = {
+    title: els.noteTitleInput.value.trim(),
+    people: els.notePeopleInput.value.trim(),
+    place: els.notePlaceInput.value.trim()
+  };
+  for (let index = target.start; index < target.end; index += 1) {
+    state.availabilityDraftNotes[target.dayKey][index] = { ...note };
+  }
+
+  closeNoteModal();
+  refreshAvailabilityCellStyles(target.dayKey);
+  renderAvailabilitySummary();
 }
 
 function renderAvailabilityGrid() {
@@ -805,20 +1070,29 @@ function renderAvailabilityGrid() {
         ${isHour ? `<span>${minutesToLabel(start)}</span>${start === LUNCH_START ? `<small>점심</small>` : ""}` : ""}
       </div>
       ${days.map(day => {
-        const selected = state.availabilityDraft[day.key][index];
-        const event = eventForAvailabilitySlot(day.key, index);
-        const eventLabel = event?.isStart
-          ? `<span class="availability-event-label">${event.title}</span>`
+        const mode = slotPaintMode(state.availabilityDraft[day.key][index]);
+        const prevMode = slotPaintMode(state.availabilityDraft[day.key][index - 1]);
+        const note = state.availabilityDraftNotes?.[day.key]?.[index] || "";
+        const title = noteTitle(note, AVAILABILITY_PAINT_MODES[mode]);
+        const summary = noteSummary(note);
+        const showNote = mode && mode !== prevMode;
+        const range = showNote ? noteRangeForCell(day.key, index) : null;
+        const rangeLabel = range
+          ? timeRangeLabel(range.start * AVAILABILITY_STEP, range.end * AVAILABILITY_STEP)
           : "";
+        const eventSlots = range ? range.end - range.start : 1;
+        const labelBase = `${displayDay(day).full} ${timeRangeLabel(start, end)}`;
         return `
           <button
-            class="availability-cell ${availabilityCellClasses(day.key, index)} ${availabilityEventClasses(event)} ${isHour ? "hour-start" : ""} ${isLunch ? "lunch" : ""}"
+            class="availability-cell ${availabilityCellClasses(day.key, index)} ${summary ? "has-detail" : ""} ${isHour ? "hour-start" : ""} ${isLunch ? "lunch" : ""}"
             type="button"
             data-day="${day.key}"
             data-slot="${index}"
-            aria-label="${displayDay(day).full} ${timeRangeLabel(start, end)} ${selected ? "가능 시간" : event ? event.title : "미선택"}"
-            aria-pressed="${selected}"
-          >${eventLabel}</button>
+            data-label-base="${labelBase}"
+            ${showNote ? `style="--event-slots: ${eventSlots};"` : ""}
+            aria-label="${labelBase} ${mode ? `${title}${summary ? ` ${summary}` : ""}` : "빈 시간"}"
+            aria-pressed="${Boolean(mode)}"
+          >${showNote ? availabilityEventMarkup({ mode, title, rangeLabel, note }) : ""}</button>
         `;
       }).join("")}
     `;
@@ -833,17 +1107,28 @@ function renderAvailabilityGrid() {
   els.availabilityGrid.querySelectorAll(".availability-day-head").forEach((head, index) => {
     head.addEventListener("click", () => {
       const dayKey = days[index].key;
-      const shouldSelect = !state.availabilityDraft[dayKey].every(Boolean);
-      setDraftDay(dayKey, shouldSelect);
+      const paintMode = state.availabilityPaintMode;
+      const shouldPaint = !state.availabilityDraft[dayKey].every(slot => slotPaintMode(slot) === paintMode);
+      setDraftDay(dayKey, shouldPaint ? paintMode : null);
       renderAvailabilityGrid();
     });
   });
 
   els.availabilityGrid.querySelectorAll(".availability-cell").forEach(cell => {
     cell.addEventListener("pointerdown", event => {
+      if (event.target.closest(".availability-note-trigger")) {
+        event.preventDefault();
+        event.stopPropagation();
+        openNoteModal(cell.dataset.day, Number(cell.dataset.slot));
+        return;
+      }
+
       event.preventDefault();
       state.availabilityDragging = true;
-      state.availabilityDragMode = !cell.classList.contains("available");
+      const currentMode = slotPaintMode(state.availabilityDraft[cell.dataset.day][Number(cell.dataset.slot)]);
+      state.availabilityDragMode = currentMode === state.availabilityPaintMode
+        ? null
+        : state.availabilityPaintMode;
       updateDraftCell(cell, state.availabilityDragMode);
     });
 
@@ -858,10 +1143,12 @@ function renderAvailabilityGrid() {
   });
 
   renderAvailabilitySummary();
+  renderAvailabilityPaintChoices();
 }
 
 function openAvailabilityModal() {
   state.availabilityDraft = currentMyAvailabilityDraft();
+  state.availabilityDraftNotes = currentMyAvailabilityNotes();
   renderAvailabilityGrid();
   els.availabilityEntryBtn.classList.add("active");
   els.availabilityModal.hidden = false;
@@ -870,6 +1157,7 @@ function openAvailabilityModal() {
 }
 
 function closeAvailabilityModal() {
+  closeNoteModal();
   els.availabilityModal.hidden = true;
   els.availabilityEntryBtn.classList.remove("active");
   document.body.classList.remove("modal-open");
@@ -878,6 +1166,8 @@ function closeAvailabilityModal() {
 
 function saveAvailability() {
   state.myAvailability = draftToAvailability(state.availabilityDraft);
+  state.myAvailabilityPaints = cloneAvailabilityDraft(state.availabilityDraft);
+  state.myAvailabilityNotes = cloneAvailabilityNotes(state.availabilityDraftNotes);
   state.myAvailabilitySaved = true;
   state.availabilityFeedback = true;
   state.confirmedCandidate = null;
@@ -1082,7 +1372,7 @@ function commonIntervalsForDay(dayKey) {
     common = intersectTwo(common, availabilityFor(person, dayKey));
   });
 
-  return common.filter(([start, end]) => end - start >= MEETING_LENGTH);
+  return common.filter(([start, end]) => end - start >= state.meetingLength);
 }
 
 function ceilToStep(value, step) {
@@ -1112,6 +1402,7 @@ function scoreCandidate(candidate) {
 
 function generateCandidates() {
   const list = [];
+  const meetingLength = state.meetingLength;
 
   days.forEach(day => {
     const common = commonIntervalsForDay(day.key);
@@ -1119,14 +1410,14 @@ function generateCandidates() {
     common.forEach(([rangeStart, rangeEnd]) => {
       for (
         let start = ceilToStep(rangeStart, 30);
-        start + MEETING_LENGTH <= rangeEnd;
+        start + meetingLength <= rangeEnd;
         start += 30
       ) {
         list.push({
           day: day.key,
           dayLabel: displayDay(day).full,
           start,
-          end: start + MEETING_LENGTH,
+          end: start + meetingLength,
           score: 0
         });
       }
@@ -1184,6 +1475,103 @@ function candidatesForDay(dayKey) {
     .sort((a, b) => a.start - b.start);
 }
 
+function selectCandidate(candidate) {
+  if (!candidate) return;
+
+  if (state.confirmedCandidate && !sameCandidate(candidate, state.confirmedCandidate)) {
+    state.confirmedCandidate = null;
+    state.calendarAdded = false;
+    state.shareUpdatedText = "방금 업데이트됨";
+  }
+
+  state.selectedDay = candidate.day;
+  state.selectedCandidate = {
+    day: candidate.day,
+    dayLabel: displayDay(candidate.day).full,
+    start: candidate.start,
+    end: candidate.end
+  };
+  state.showAllCandidates = false;
+  state.mobileCandidatesOpen = false;
+  hideScheduleDetail();
+  renderAll();
+}
+
+function chartPointFromEvent(event) {
+  const rect = els.chartSvg.getBoundingClientRect();
+  return {
+    x: ((event.clientX - rect.left) / rect.width) * 720,
+    y: ((event.clientY - rect.top) / rect.height) * 720
+  };
+}
+
+function minuteFromChartEvent(event) {
+  const { x, y } = chartPointFromEvent(event);
+  let angle = Math.atan2(y - CHART.cy, x - CHART.cx) * 180 / Math.PI;
+
+  if (angle < CHART.startAngle) {
+    angle += 360;
+  }
+
+  const progress = Math.max(0, Math.min(CHART.totalAngle, angle - CHART.startAngle));
+  return (progress / CHART.totalAngle) * WORK_MINUTES;
+}
+
+function isWithinChartRing(event) {
+  const selected = selectedPeople();
+  if (!selected.length) return false;
+
+  const { outerRadius, ringWidth, gap } = ringLayout(selected.length);
+  const innerRadius = outerRadius - (selected.length - 1) * (ringWidth + gap);
+  const innerEdge = innerRadius - ringWidth / 2 - 14;
+  const outerEdge = outerRadius + ringWidth / 2 + 14;
+  const { x, y } = chartPointFromEvent(event);
+  const distance = Math.hypot(x - CHART.cx, y - CHART.cy);
+
+  return distance >= innerEdge && distance <= outerEdge;
+}
+
+function candidateFromChartRange(rangeStart, rangeEnd, event = null) {
+  const candidates = candidatesForDay(state.selectedDay)
+    .filter(candidate => candidate.start >= rangeStart && candidate.end <= rangeEnd);
+
+  if (!candidates.length) return null;
+  if (!event || !Number.isFinite(event.clientX)) return candidates[0];
+
+  const clickedMinute = minuteFromChartEvent(event);
+  const containing = candidates.filter(candidate =>
+    clickedMinute >= candidate.start && clickedMinute < candidate.end
+  );
+  const pool = containing.length ? containing : candidates;
+  const targetStart = Math.max(rangeStart, clickedMinute - state.meetingLength / 2);
+
+  return [...pool].sort((a, b) =>
+    Math.abs(a.start - targetStart) - Math.abs(b.start - targetStart)
+  )[0];
+}
+
+function candidateFromChartEvent(event) {
+  if (!isWithinChartRing(event)) return null;
+
+  const clickedMinute = minuteFromChartEvent(event);
+  const commonRange = commonIntervalsForDay(state.selectedDay).find(([start, end]) =>
+    clickedMinute >= start && clickedMinute < end
+  );
+
+  return commonRange ? candidateFromChartRange(commonRange[0], commonRange[1], event) : null;
+}
+
+function handleChartFreeTimeClick(event) {
+  const target = event.target;
+  if (target.closest?.(".common-band, .arc-busy")) return;
+
+  const candidate = candidateFromChartEvent(event);
+  if (candidate) {
+    event.preventDefault();
+    selectCandidate(candidate);
+  }
+}
+
 function cycleCenterCandidate() {
   const candidates = candidatesForDay(state.selectedDay);
   if (candidates.length < 2) return;
@@ -1192,8 +1580,7 @@ function cycleCenterCandidate() {
     sameCandidate(candidate, state.selectedCandidate)
   );
   const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % candidates.length;
-  state.selectedCandidate = candidates[nextIndex];
-  renderAll();
+  selectCandidate(candidates[nextIndex]);
 }
 
 function renderParticipants() {
@@ -1202,6 +1589,11 @@ function renderParticipants() {
   els.selectionCount.textContent = `선택 ${selected.length}/6`;
   els.selectedSummary.textContent = `선택한 ${selected.length}명 기준`;
   els.asideDesc.textContent = `선택한 ${selected.length}명이 동시에 비어 있는 후보입니다.`;
+  els.durationOptions.forEach(button => {
+    const active = Number(button.dataset.duration) === state.meetingLength;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  });
 
   els.participantList.innerHTML = people.map(person => {
     const isChecked = state.selectedIds.includes(person.id);
@@ -1251,6 +1643,18 @@ function renderParticipants() {
   });
 }
 
+function setMeetingLength(minutes) {
+  if (!MEETING_LENGTH_OPTIONS.includes(minutes) || minutes === state.meetingLength) return;
+
+  state.meetingLength = minutes;
+  state.confirmedCandidate = null;
+  state.calendarAdded = false;
+  state.showAllCandidates = false;
+  state.mobileCandidatesOpen = false;
+  state.selectedCandidate = null;
+  renderAll();
+}
+
 function renderWeek() {
   els.weekStrip.innerHTML = `
     <button class="nav-arrow" type="button" data-week-shift="-1" aria-label="이전 주">${iconMarkup("chevron-left")}</button>
@@ -1274,8 +1678,16 @@ function renderWeek() {
       state.showAllCandidates = false;
       const candidates = generateCandidates();
       const firstForDay = candidates.find(candidate => candidate.day === state.selectedDay);
-      state.selectedCandidate = firstForDay || null;
-      renderAll();
+      if (firstForDay) {
+        selectCandidate(firstForDay);
+      } else {
+        state.selectedCandidate = null;
+        if (state.confirmedCandidate?.day !== state.selectedDay) {
+          state.confirmedCandidate = null;
+          state.calendarAdded = false;
+        }
+        renderAll();
+      }
     });
   });
 
@@ -1292,6 +1704,7 @@ function renderWeek() {
 function renderChart() {
   const svg = els.chartSvg;
   svg.innerHTML = "";
+  scheduleLabelPathId = 0;
   hideScheduleDetail();
 
   const selected = selectedPeople();
@@ -1411,6 +1824,11 @@ function renderChart() {
         }
       });
       svg.appendChild(path);
+
+      const label = createScheduleLabel(person, item, radius);
+      if (label) {
+        svg.appendChild(label);
+      }
     });
 
     availabilityFor(person, state.selectedDay).forEach(([start, end]) => {
@@ -1463,7 +1881,8 @@ function renderChart() {
     splitCommonBand(start, end).forEach(segment => {
       if (segment.end <= segment.start) return;
 
-      svg.appendChild(createSvg("path", {
+      const candidate = candidateFromChartRange(segment.start, segment.end);
+      const band = createSvg("path", {
         d: describeAnnularSector(
           CHART.cx,
           CHART.cy,
@@ -1472,8 +1891,30 @@ function renderChart() {
           angleForMinute(segment.start),
           angleForMinute(segment.end)
         ),
-        class: `common-band ${segment.type}`
-      }));
+        class: `common-band ${segment.type}`,
+        tabindex: candidate ? "0" : "-1",
+        role: candidate ? "button" : "presentation",
+        "aria-label": candidate
+          ? `${displayDay(state.selectedDay).full} ${timeRangeLabel(candidate.start, candidate.end)} 공통 가능 시간 선택`
+          : "공통 가능 시간"
+      });
+
+      if (candidate) {
+        const chooseCandidate = event => {
+          event.preventDefault();
+          event.stopPropagation();
+          event.currentTarget.blur?.();
+          selectCandidate(candidateFromChartRange(segment.start, segment.end, event));
+        };
+
+        band.addEventListener("click", chooseCandidate);
+        band.addEventListener("keydown", event => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          chooseCandidate(event);
+        });
+      }
+
+      svg.appendChild(band);
     });
   });
 
@@ -1545,7 +1986,7 @@ function renderCenter() {
     els.centerTime.textContent = "참석자 선택을 조정해보세요";
     els.centerMeta.innerHTML = `
       <div>선택한 ${selected.length}명 기준</div>
-      <div>1시간 이상 겹치는 시간이 없어요</div>
+      <div>${durationLabel()} 이상 겹치는 시간이 없어요</div>
     `;
     els.confirmBtn.textContent = "가능한 시간 없음";
     els.confirmBtn.disabled = true;
@@ -1555,24 +1996,28 @@ function renderCenter() {
   const day = days.find(item => item.key === candidate.day);
   const isRecommendation = sameCandidate(candidate, recommendation);
   const isConfirmed = isConfirmedCandidate(candidate);
-  els.centerState.textContent = isConfirmed
+  const stateLabel = isConfirmed
     ? "확정된 회의 시간"
     : state.availabilityFeedback
-      ? "내 가능 시간이 반영됐어요."
-      : isRecommendation
-      ? "추천 회의 시간"
-      : "선택한 회의 시간";
+    ? "내 가능 시간이 반영됐어요."
+    : isRecommendation
+    ? "추천 회의 시간"
+    : "선택한 회의 시간";
+  els.centerState.innerHTML = `
+    <span>${stateLabel}</span>
+    <b class="center-duration">${durationLabel()}</b>
+  `;
   els.centerDay.textContent = displayDay(day).full;
   els.centerTime.textContent = timeRangeLabel(candidate.start, candidate.end);
   els.centerMeta.innerHTML = `
-    <div>${isConfirmed ? "캘린더 초대가 준비됐어요" : "선택한 참석자 모두 가능"}</div>
+    <div>${isConfirmed ? "초대 준비 완료" : "모두 가능"}</div>
     <div>${isConfirmed
-      ? `참석자 ${selected.length}명에게 공유 링크 생성`
+      ? `참석자 ${selected.length}명 · 링크 생성`
       : state.availabilityFeedback
-      ? "추천 시간을 다시 계산했어요"
+      ? "추천 재계산"
       : isRecommendation
-      ? "공통 가능 시간 중 가장 적합한 시간이에요"
-      : "공통 후보 중 직접 선택한 시간이에요"}</div>
+      ? "추천 시간"
+      : "직접 선택"}</div>
   `;
   els.confirmBtn.classList.toggle("confirmed", isConfirmed);
   els.actionRow.classList.toggle("availability-pending", needsMyAvailability);
@@ -1650,7 +2095,7 @@ function renderCandidates() {
     els.mobileCandidateToggleLabel.textContent = "공통 후보 없음";
     els.candidateList.innerHTML = `
       <div class="empty">
-        선택한 ${selected.length}명이 동시에 가능한 1시간 구간이 없어요.<br />
+        선택한 ${selected.length}명이 동시에 가능한 ${durationLabel()} 구간이 없어요.<br />
         참석자 선택을 조정하거나 기간을 넓혀보세요.
       </div>
     `;
@@ -1720,7 +2165,7 @@ function renderCandidates() {
           </div>
           ${dayCandidates.length
             ? `<div class="candidate-group-list">${dayCandidates.map(candidateCard).join("")}</div>`
-            : `<div class="candidate-day-empty">이 날짜에는 1시간 이상 겹치는 시간이 없어요.</div>`}
+            : `<div class="candidate-day-empty">이 날짜에는 ${durationLabel()} 이상 겹치는 시간이 없어요.</div>`}
         </section>
       `;
   };
@@ -1732,15 +2177,12 @@ function renderCandidates() {
 
   els.candidateList.querySelectorAll(".candidate").forEach(button => {
     button.addEventListener("click", () => {
-      state.selectedDay = button.dataset.day;
-      state.selectedCandidate = {
+      selectCandidate({
         day: button.dataset.day,
         dayLabel: displayDay(button.dataset.day).full,
         start: Number(button.dataset.start),
         end: Number(button.dataset.end)
-      };
-      state.showAllCandidates = false;
-      renderAll();
+      });
     });
   });
 }
@@ -1751,7 +2193,7 @@ function renderReasons() {
   els.reasonList.hidden = !state.reasonsExpanded;
 
   if (!candidate) {
-    els.reasonSummaryText.textContent = "현재 조건에서는 1시간 이상 겹치는 시간이 부족해요.";
+    els.reasonSummaryText.textContent = `현재 조건에서는 ${durationLabel()} 이상 겹치는 시간이 부족해요.`;
     els.reasonList.innerHTML = `
       <div class="reason">
         <span class="reason-icon alert">${iconMarkup("alert")}</span>
@@ -1848,30 +2290,64 @@ function completeConfirmation() {
 
 function bindStaticEvents() {
   els.scheduleDetailClose.addEventListener("click", hideScheduleDetail);
+  els.chartSvg.addEventListener("click", handleChartFreeTimeClick);
   els.copyLinkBtn.addEventListener("click", copyMeetingLink);
+  els.durationOptions.forEach(button => {
+    button.addEventListener("click", () => {
+      setMeetingLength(Number(button.dataset.duration));
+    });
+  });
   els.availabilityEntryBtn.addEventListener("click", openAvailabilityModal);
   els.availabilityModalClose.addEventListener("click", closeAvailabilityModal);
   els.availabilityCancelBtn.addEventListener("click", closeAvailabilityModal);
   els.saveAvailabilityBtn.addEventListener("click", saveAvailability);
 
+  els.availabilityPaintChoices.forEach(button => {
+    button.addEventListener("click", () => {
+      state.availabilityPaintMode = button.dataset.paintMode;
+      renderAvailabilityPaintChoices();
+    });
+  });
+
+  els.noteModalClose.addEventListener("click", closeNoteModal);
+  els.noteModalCancel.addEventListener("click", closeNoteModal);
+  els.noteModalSave.addEventListener("click", saveNoteModal);
+  [els.noteTitleInput, els.notePeopleInput, els.notePlaceInput].forEach(input => {
+    input.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        saveNoteModal();
+      }
+    });
+  });
+
   els.selectWorkHoursBtn.addEventListener("click", () => {
-    state.availabilityDraft = blankAvailabilityDraft(true);
+    state.availabilityDraft = blankAvailabilityDraft(null);
+    state.availabilityDraftNotes = blankAvailabilityNotes();
     renderAvailabilityGrid();
   });
 
   els.excludeLunchBtn.addEventListener("click", () => {
-    setDraftLunch(false);
+    state.availabilityPaintMode = "lunch";
+    setDraftLunch("lunch");
     renderAvailabilityGrid();
   });
 
   els.clearAvailabilityBtn.addEventListener("click", () => {
-    state.availabilityDraft = blankAvailabilityDraft(false);
+    state.availabilityDraft = blankAvailabilityDraft(null);
+    state.availabilityDraftNotes = blankAvailabilityNotes();
     renderAvailabilityGrid();
   });
 
   els.availabilityModal.addEventListener("click", event => {
     if (event.target === els.availabilityModal) {
       closeAvailabilityModal();
+    }
+  });
+
+  els.noteModal.addEventListener("click", event => {
+    if (event.target === els.noteModal) {
+      closeNoteModal();
     }
   });
 
@@ -1936,7 +2412,11 @@ function bindStaticEvents() {
 
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && !els.availabilityModal.hidden) {
-      closeAvailabilityModal();
+      if (!els.noteModal.hidden) {
+        closeNoteModal();
+      } else {
+        closeAvailabilityModal();
+      }
     } else if (event.key === "Escape" && !els.confirmModal.hidden) {
       closeConfirmModal();
     } else if (event.key === "Escape" && !els.scheduleDetail.hidden) {

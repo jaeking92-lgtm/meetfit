@@ -84,7 +84,12 @@
           </div>
           <div class="summary-row">
             <span class="summary-label"><svg class="ui-icon" aria-hidden="true"><use href="#icon-clock"></use></svg>회의 길이</span>
-            <strong>1시간</strong>
+            <div class="duration-control" id="durationControl" aria-label="회의 길이 선택">
+              <button class="duration-option" type="button" data-duration="30">30분</button>
+              <button class="duration-option active" type="button" data-duration="60">1시간</button>
+              <button class="duration-option" type="button" data-duration="90">1.5시간</button>
+              <button class="duration-option" type="button" data-duration="120">2시간</button>
+            </div>
           </div>
           <div class="summary-row">
             <span class="summary-label"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg>업무시간</span>
@@ -286,38 +291,61 @@
       <div class="availability-hero">
         <span class="availability-hero-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg></span>
         <div>
-          <span class="availability-kicker">내 가능 시간</span>
-          <h2 id="availabilityModalTitle">내 가능 시간을 등록해주세요</h2>
-          <p>가능한 시간을 칠하면 MeetFit이 공통 후보와 추천 시간을 바로 다시 계산해요.</p>
+          <span class="availability-kicker">시간 등록</span>
+          <h2 id="availabilityModalTitle">내 가능 시간</h2>
         </div>
       </div>
 
       <div class="availability-toolbar" aria-label="빠른 선택">
-        <button class="quick-action active" id="selectWorkHoursBtn" type="button">업무시간 전체 선택</button>
+        <button class="quick-action" id="selectWorkHoursBtn" type="button">전체 비우기</button>
         <button class="quick-action" id="excludeLunchBtn" type="button">점심시간 제외</button>
-        <button class="quick-action" id="clearAvailabilityBtn" type="button">모두 지우기</button>
+        <button class="quick-action" id="clearAvailabilityBtn" type="button">입력 지우기</button>
         <button class="quick-action ghost" id="calendarSyncBtn" type="button" disabled>캘린더 연동</button>
       </div>
 
-      <div class="availability-guide">
-        <span><i class="guide-dot available"></i>가능</span>
-        <span class="guide-summary"><i class="guide-dot schedule"></i>일정</span>
-        <span class="guide-detail"><i class="guide-dot meeting"></i>회의</span>
-        <span class="guide-detail"><i class="guide-dot focus"></i>집중업무</span>
-        <span class="guide-detail"><i class="guide-dot travel"></i>출장</span>
-        <span class="guide-detail"><i class="guide-dot vacation"></i>휴가</span>
-        <span><i class="guide-dot lunch"></i>점심</span>
+      <div class="availability-guide" aria-label="시간 상태">
+        <button class="paint-choice active" type="button" data-paint-mode="meeting"><i class="guide-dot meeting"></i>회의</button>
+        <button class="paint-choice" type="button" data-paint-mode="focus"><i class="guide-dot focus"></i>집중업무</button>
+        <button class="paint-choice" type="button" data-paint-mode="travel"><i class="guide-dot travel"></i>출장</button>
+        <button class="paint-choice" type="button" data-paint-mode="vacation"><i class="guide-dot vacation"></i>휴가</button>
+        <button class="paint-choice" type="button" data-paint-mode="lunch"><i class="guide-dot lunch"></i>점심</button>
       </div>
 
       <div class="availability-grid-wrap">
-        <div class="availability-grid" id="availabilityGrid" aria-label="내 가능 시간 선택 그리드"></div>
+        <div class="availability-grid" id="availabilityGrid" aria-label="내 주간 시간표"></div>
       </div>
 
       <div class="availability-summary" id="availabilitySummary" aria-live="polite"></div>
 
       <div class="availability-actions">
         <button class="modal-cancel" id="availabilityCancelBtn" type="button">취소</button>
-        <button class="modal-submit" id="saveAvailabilityBtn" type="button">저장하고 추천 시간 보기</button>
+        <button class="modal-submit" id="saveAvailabilityBtn" type="button">저장하기</button>
+      </div>
+
+      <div class="note-modal-backdrop" id="noteModal" hidden>
+        <section class="note-modal" role="dialog" aria-modal="true" aria-labelledby="noteModalTitle">
+          <button class="note-modal-close" id="noteModalClose" type="button" aria-label="닫기"><svg class="ui-icon" aria-hidden="true"><use href="#icon-x"></use></svg></button>
+          <span class="note-modal-kicker" id="noteModalType">회의</span>
+          <h3 id="noteModalTitle">미팅 정보</h3>
+          <div class="note-field-list">
+            <label class="note-field">
+              <span>제목</span>
+              <input id="noteTitleInput" type="text" maxlength="24" placeholder="미팅 제목" />
+            </label>
+            <label class="note-field">
+              <span>인원</span>
+              <input id="notePeopleInput" type="text" maxlength="24" placeholder="참석 인원" />
+            </label>
+            <label class="note-field">
+              <span>장소</span>
+              <input id="notePlaceInput" type="text" maxlength="24" placeholder="미팅 장소" />
+            </label>
+          </div>
+          <div class="note-modal-actions">
+            <button class="note-modal-cancel" id="noteModalCancel" type="button">취소</button>
+            <button class="note-modal-save" id="noteModalSave" type="button">저장</button>
+          </div>
+        </section>
       </div>
     </section>
   </div>
