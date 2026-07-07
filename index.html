@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MeetFit - 회의 시간 찾기</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="icon-help" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M9.7 9a2.5 2.5 0 1 1 3.8 2.1c-.9.5-1.5 1.1-1.5 2.2"></path>
+      <path d="M12 17h.01"></path>
+    </symbol>
+    <symbol id="icon-calendar" viewBox="0 0 24 24">
+      <rect x="3" y="5" width="18" height="16" rx="2"></rect>
+      <path d="M16 3v4M8 3v4M3 10h18"></path>
+    </symbol>
+    <symbol id="icon-users" viewBox="0 0 24 24">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+      <circle cx="9" cy="7" r="4"></circle>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path>
+    </symbol>
+    <symbol id="icon-clock" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 7v5l3 2"></path>
+    </symbol>
+    <symbol id="icon-eye" viewBox="0 0 24 24">
+      <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"></path>
+      <circle cx="12" cy="12" r="2.5"></circle>
+    </symbol>
+    <symbol id="icon-eye-off" viewBox="0 0 24 24">
+      <path d="m3 3 18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a16.8 16.8 0 0 1-2.2 3M6.6 6.6A16 16 0 0 0 2 12s3.5 7 10 7a9.8 9.8 0 0 0 4.1-.9"></path>
+    </symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24">
+      <path d="m5 12 4 4L19 6"></path>
+    </symbol>
+    <symbol id="icon-alert" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"></circle>
+      <path d="M12 8v5M12 16h.01"></path>
+    </symbol>
+    <symbol id="icon-chevron-left" viewBox="0 0 24 24">
+      <path d="m15 18-6-6 6-6"></path>
+    </symbol>
+    <symbol id="icon-chevron-right" viewBox="0 0 24 24">
+      <path d="m9 18 6-6-6-6"></path>
+    </symbol>
+    <symbol id="icon-x" viewBox="0 0 24 24">
+      <path d="M6 6l12 12M18 6 6 18"></path>
+    </symbol>
+  </svg>
+
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">M</div>
+        <span>MeetFit</span>
+      </div>
+
+      <div class="top-actions">
+        <button class="top-btn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-help"></use></svg>사용 가이드</button>
+        <button class="top-btn secondary" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg>캘린더 연동</button>
+        <div class="avatar-mini">J</div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="sidebar">
+        <div class="meeting-kicker">회의 가능한 시간 찾기</div>
+        <h1 class="meeting-title">신규 온보딩 플로우<br />개선 회의</h1>
+
+        <div class="summary-card">
+          <div class="summary-row">
+            <span class="summary-label"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>기준 참석자</span>
+            <strong id="selectedSummary">선택한 4명 기준</strong>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label"><svg class="ui-icon" aria-hidden="true"><use href="#icon-clock"></use></svg>회의 길이</span>
+            <strong>1시간</strong>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg>업무시간</span>
+            <strong>09:00 - 18:00</strong>
+          </div>
+        </div>
+
+        <button class="availability-entry" id="availabilityEntryBtn" type="button">
+          <span class="availability-entry-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg></span>
+          <span>
+            <strong>내 가능 시간 등록하기</strong>
+            <small>내 시간이 필요할 때만 조정</small>
+          </span>
+        </button>
+
+        <div class="section-head">
+          <h2>참석자 선택</h2>
+          <span id="selectionCount">선택 4/6</span>
+        </div>
+
+        <div class="participant-list" id="participantList"></div>
+
+        <div class="tip compact" id="displayGuide">
+          <button
+            class="tip-toggle"
+            id="displayGuideToggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="displayGuideBody"
+          >
+            <span>
+              <strong>표시 기준</strong>
+              <small>가능 시간 표시 기준</small>
+            </span>
+            <i aria-hidden="true"></i>
+          </button>
+          <p id="displayGuideBody" hidden>
+            사람별 가능 시간은 낮은 채도로 표시되고, 선택한 참석자들이 동시에 비어 있는 시간은 파란 띠로 연결되어 보여요. 가장 적합한 시간은 더 진한 파랑으로 강조됩니다.
+          </p>
+        </div>
+      </aside>
+
+      <section class="content">
+        <div class="week-strip" id="weekStrip"></div>
+
+        <div class="chart-card">
+          <div class="chart-stage">
+            <svg id="chartSvg" viewBox="0 0 720 720" aria-label="선택한 참석자의 회의 가능 시간 차트"></svg>
+
+            <div class="center-card" id="centerCard">
+              <div class="state" id="centerState">추천 회의 시간</div>
+              <h3 id="centerDay">수요일 7/2</h3>
+              <div class="time" id="centerTime">14:00 - 15:00</div>
+              <div class="meta" id="centerMeta">
+                <div>선택한 참석자 모두 가능</div>
+                <div>공통 가능 시간 중 가장 적합한 시간이에요</div>
+              </div>
+              <div class="center-switch-hint" id="centerSwitchHint" hidden></div>
+            </div>
+          </div>
+
+          <div class="entry-feedback" id="entryFeedback" aria-live="polite">
+            <span class="entry-feedback-icon" aria-hidden="true">
+              <i></i>
+              <i></i>
+              <i></i>
+            </span>
+            <span class="entry-feedback-copy">
+              <strong id="entryFeedbackTitle">선택한 참석자의 가능 시간을 계산하고 있어요</strong>
+              <small id="entryFeedbackText">공통으로 비어 있는 구간을 찾는 중이에요.</small>
+            </span>
+            <span class="entry-progress" aria-hidden="true"></span>
+          </div>
+
+          <div class="chart-hint" id="chartHint">
+            <span class="chart-hint-dot"></span>
+            <span>파란 띠가 연결된 구간은 선택한 참석자가 동시에 비어 있는 시간이에요.</span>
+          </div>
+
+          <aside class="schedule-detail" id="scheduleDetail" aria-live="polite" hidden>
+            <button class="schedule-detail-close" id="scheduleDetailClose" type="button" aria-label="일정 상세 닫기"><svg class="ui-icon" aria-hidden="true"><use href="#icon-x"></use></svg></button>
+            <span class="schedule-detail-kicker">일정 있음</span>
+            <div class="schedule-detail-person">
+              <i id="scheduleDetailColor"></i>
+              <strong id="scheduleDetailPerson"></strong>
+            </div>
+            <h3 id="scheduleDetailTitle"></h3>
+            <p id="scheduleDetailTime"></p>
+          </aside>
+        </div>
+
+        <div class="chart-legend">
+          <span class="legend-item">
+            <i class="legend-swatch person"></i>
+            개인 가능 시간
+          </span>
+          <span class="legend-item">
+            <i class="legend-swatch common"></i>
+            공통 가능 시간
+          </span>
+          <span class="legend-item">
+            <i class="legend-swatch recommend"></i>
+            추천 시간
+          </span>
+          <span class="legend-item auxiliary">
+            <i class="legend-swatch schedule"></i>
+            일정 있음
+          </span>
+        </div>
+
+        <div class="action-row" id="actionRow">
+          <button class="primary-action" id="confirmBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg>추천 시간으로 확정하기</button>
+          <button class="secondary-action" id="togglePersonalBtn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-eye"></use></svg>개인 가능 시간 숨기기</button>
+        </div>
+      </section>
+
+      <aside class="aside">
+        <h2 class="aside-title">공통 가능 후보</h2>
+        <p class="aside-desc" id="asideDesc">선택한 참석자 기준으로 동시에 비어 있는 시간입니다.</p>
+
+        <button
+          class="mobile-candidate-toggle"
+          id="mobileCandidateToggle"
+          type="button"
+          aria-controls="candidatePanelBody"
+          aria-expanded="false"
+        >
+          <span id="mobileCandidateToggleLabel">가능 후보 보기</span>
+          <i aria-hidden="true"></i>
+        </button>
+
+        <div class="candidate-panel-body" id="candidatePanelBody">
+          <div class="candidate-list" id="candidateList"></div>
+          <button
+            class="candidate-toggle"
+            id="candidateToggle"
+            type="button"
+            aria-controls="candidateList"
+            aria-expanded="false"
+            hidden
+          ></button>
+        </div>
+
+        <div class="reason-box">
+          <button
+            class="reason-summary"
+            id="reasonToggle"
+            type="button"
+            aria-expanded="false"
+            aria-controls="reasonList"
+          >
+            <span>
+              <strong>추천 이유</strong>
+              <small id="reasonSummaryText">가능한 후보 중 가장 무리 없는 시간을 우선 추천해요.</small>
+            </span>
+            <i aria-hidden="true"></i>
+          </button>
+
+          <div class="reason-list" id="reasonList" hidden></div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="confirmModal" hidden>
+    <section
+      class="confirm-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirmModalTitle"
+    >
+      <button class="modal-close" id="confirmModalClose" type="button" aria-label="닫기"><svg class="ui-icon" aria-hidden="true"><use href="#icon-x"></use></svg></button>
+      <div class="modal-icon" id="confirmModalIcon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-calendar"></use></svg></div>
+      <h2 id="confirmModalTitle">이 시간으로 회의를 확정할까요?</h2>
+      <p id="confirmModalMessage">선택한 참석자에게 확정된 회의 시간이 공유됩니다.</p>
+
+      <div class="modal-meeting-time">
+        <span id="confirmModalDate"></span>
+        <strong id="confirmModalTime"></strong>
+      </div>
+      <div class="modal-attendees" id="confirmModalAttendees"></div>
+
+      <div class="modal-actions">
+        <button class="modal-cancel" id="confirmModalCancel" type="button">취소</button>
+        <button class="modal-submit" id="confirmModalSubmit" type="button">확정하기</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop availability-backdrop" id="availabilityModal" hidden>
+    <section
+      class="availability-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="availabilityModalTitle"
+    >
+      <button class="modal-close" id="availabilityModalClose" type="button" aria-label="닫기"><svg class="ui-icon" aria-hidden="true"><use href="#icon-x"></use></svg></button>
+
+      <div class="availability-hero">
+        <span class="availability-hero-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg></span>
+        <div>
+          <span class="availability-kicker">내 가능 시간</span>
+          <h2 id="availabilityModalTitle">내 가능 시간을 등록해주세요</h2>
+          <p>가능한 시간을 칠하면 MeetFit이 공통 후보와 추천 시간을 바로 다시 계산해요.</p>
+        </div>
+      </div>
+
+      <div class="availability-toolbar" aria-label="빠른 선택">
+        <button class="quick-action active" id="selectWorkHoursBtn" type="button">업무시간 전체 선택</button>
+        <button class="quick-action" id="excludeLunchBtn" type="button">점심시간 제외</button>
+        <button class="quick-action" id="clearAvailabilityBtn" type="button">모두 지우기</button>
+        <button class="quick-action ghost" id="calendarSyncBtn" type="button" disabled>Google Calendar 연동 예정</button>
+      </div>
+
+      <div class="availability-guide">
+        <span><i class="guide-dot available"></i>가능</span>
+        <span class="guide-summary"><i class="guide-dot schedule"></i>일정</span>
+        <span class="guide-detail"><i class="guide-dot meeting"></i>회의</span>
+        <span class="guide-detail"><i class="guide-dot focus"></i>집중업무</span>
+        <span class="guide-detail"><i class="guide-dot travel"></i>출장</span>
+        <span class="guide-detail"><i class="guide-dot vacation"></i>휴가</span>
+        <span><i class="guide-dot lunch"></i>점심</span>
+      </div>
+
+      <div class="availability-grid-wrap">
+        <div class="availability-grid" id="availabilityGrid" aria-label="내 가능 시간 선택 그리드"></div>
+      </div>
+
+      <div class="availability-summary" id="availabilitySummary" aria-live="polite"></div>
+
+      <div class="availability-actions">
+        <button class="modal-cancel" id="availabilityCancelBtn" type="button">취소</button>
+        <button class="modal-submit" id="saveAvailabilityBtn" type="button">저장하고 추천 시간 보기</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
