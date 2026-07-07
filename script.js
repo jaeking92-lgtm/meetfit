@@ -1,5 +1,5 @@
-const DEFAULT_MEETING_LENGTH = 60;
-const MEETING_LENGTH_OPTIONS = [30, 60, 90, 120];
+const DEFAULT_MEETING_LENGTH = 30;
+const MEETING_LENGTH_OPTIONS = [30, 60];
 const START_OF_DAY = 9 * 60;
 const WORK_MINUTES = 9 * 60;
 const PREFERRED_START = 14 * 60 - START_OF_DAY;
@@ -26,6 +26,7 @@ const AVAILABILITY_NOTE_PLACEHOLDERS = {
   vacation: "휴가명",
   lunch: "점심"
 };
+const DEFAULT_MEETING_TITLE = "신규 온보딩 플로우 개선 회의";
 
 function iconMarkup(name, className = "ui-icon") {
   return `<svg class="${className}" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
@@ -59,7 +60,7 @@ const days = [
   { key: "fri", label: "금", date: "7/4", full: "금요일 7/4" }
 ];
 
-function scheduleItem(title, start, end) {
+function scheduleItem(title, start, end, importance = "soft") {
   const toMinute = value => {
     const [hour, minute] = value.split(":").map(Number);
     return hour * 60 + minute - START_OF_DAY;
@@ -68,237 +69,177 @@ function scheduleItem(title, start, end) {
   return {
     title,
     start: toMinute(start),
-    end: toMinute(end)
+    end: toMinute(end),
+    importance
   };
 }
 
 const people = [
   {
     id: "p1",
-    name: "이지현",
-    role: "프로덕트 매니저",
-    type: "핵심",
+    name: "김재혁",
+    role: "UXUI 디자이너",
+    type: "필수",
     isMe: true,
-    initial: "이",
+    initial: "김",
     color: "#4F8DF7",
     schedule: {
       mon: [
-        scheduleItem("스탠드업", "09:00", "10:00"),
-        scheduleItem("출장 · 파트너 미팅", "11:00", "12:00"),
-        scheduleItem("리뷰", "14:00", "15:00"),
-        scheduleItem("1:1", "16:00", "17:00")
+        scheduleItem("사용자 인터뷰", "10:00", "11:00"),
+        scheduleItem("디자인 의사결정", "14:00", "15:00", "hard")
       ],
       tue: [
-        scheduleItem("주간 미팅", "09:00", "10:00"),
-        scheduleItem("제품 싱크", "11:00", "12:00"),
-        scheduleItem("문서 리뷰", "14:00", "15:00"),
-        scheduleItem("리더십 미팅", "16:00", "17:00")
+        scheduleItem("외부 디자인 워크숍", "13:00", "15:00", "hard")
       ],
       wed: [
-        scheduleItem("스탠드업", "09:00", "10:00"),
-        scheduleItem("인터뷰", "10:00", "11:00"),
-        scheduleItem("리뷰", "11:00", "12:00"),
-        scheduleItem("의사결정 미팅", "15:00", "16:00")
+        scheduleItem("사용성 검증", "10:00", "11:00", "hard"),
+        scheduleItem("최종 디자인 승인", "15:00", "16:00", "hard")
       ],
       thu: [
-        scheduleItem("스탠드업", "09:00", "10:00"),
-        scheduleItem("워크숍", "13:00", "15:00"),
-        scheduleItem("1:1", "16:00", "17:00")
+        scheduleItem("온보딩 워크숍", "13:00", "15:00")
       ],
       fri: [
-        scheduleItem("주간 미팅", "09:00", "10:00"),
-        scheduleItem("로드맵 리뷰", "11:00", "12:00"),
-        scheduleItem("회고", "13:00", "14:00"),
-        scheduleItem("반차 휴가", "14:00", "15:00"),
-        scheduleItem("마감 정리", "16:00", "17:00")
+        scheduleItem("오후 반차", "14:00", "18:00", "hard")
       ]
     }
   },
   {
     id: "p2",
     name: "김민수",
-    role: "디자인 리드",
-    type: "핵심",
+    role: "프로덕트 매니저",
+    type: "필수",
     initial: "김",
     color: "#36B37E",
     schedule: {
       mon: [
-        scheduleItem("디자인 크리틱", "10:00", "11:00"),
-        scheduleItem("에셋 정리", "13:00", "14:00"),
-        scheduleItem("UI 리뷰", "15:00", "16:00")
+        scheduleItem("경영진 보고", "09:00", "10:00", "hard"),
+        scheduleItem("고객사 미팅", "15:00", "16:00", "hard")
       ],
       tue: [
-        scheduleItem("디자인 싱크", "09:00", "10:00"),
-        scheduleItem("QA 확인", "11:00", "12:00"),
-        scheduleItem("플로우 점검", "15:00", "16:00")
+        scheduleItem("스프린트 킥오프", "10:00", "11:00"),
+        scheduleItem("릴리즈 의사결정", "15:00", "16:00", "hard")
       ],
       wed: [
-        scheduleItem("디자인 리뷰", "09:00", "10:00"),
-        scheduleItem("핸드오프", "10:00", "11:00"),
-        scheduleItem("QA", "11:00", "12:00"),
-        scheduleItem("피드백 반영", "15:00", "16:00")
+        scheduleItem("임원 리뷰", "11:00", "12:00", "hard"),
+        scheduleItem("릴리즈 승인", "16:00", "17:00", "hard")
       ],
       thu: [
-        scheduleItem("워크숍", "09:00", "11:00"),
-        scheduleItem("사용자 테스트", "14:00", "15:00"),
-        scheduleItem("디자인 오피스아워", "16:00", "17:00")
+        scheduleItem("파트너 미팅", "14:00", "15:30", "hard")
       ],
       fri: [
-        scheduleItem("UI QA", "10:00", "11:00"),
-        scheduleItem("디자인 리뷰", "13:00", "15:00"),
-        scheduleItem("싱크", "16:00", "17:00")
+        scheduleItem("오후 휴가", "13:00", "18:00", "hard")
       ]
     }
   },
   {
     id: "p3",
     name: "박서연",
-    role: "개발 리드",
-    type: "핵심",
+    role: "프론트엔드 엔지니어",
+    type: "필수",
     initial: "박",
     color: "#FF8B3D",
     schedule: {
       mon: [
-        scheduleItem("스프린트", "09:00", "11:00"),
-        scheduleItem("코드 리뷰", "13:00", "14:00"),
-        scheduleItem("개발 집중", "15:00", "17:00")
+        scheduleItem("긴급 버그 대응", "13:00", "14:00", "hard")
       ],
       tue: [
-        scheduleItem("이슈 트리아지", "09:00", "10:00"),
-        scheduleItem("백엔드 싱크", "11:00", "12:00"),
-        scheduleItem("배포 준비", "14:00", "16:00")
+        scheduleItem("배포 락다운", "14:00", "16:00", "hard")
       ],
       wed: [
-        scheduleItem("스탠드업", "09:00", "10:00"),
-        scheduleItem("기술 싱크", "10:00", "12:00"),
-        scheduleItem("코드 리뷰", "13:00", "14:00"),
-        scheduleItem("개발 집중", "15:00", "16:00")
+        scheduleItem("보안 점검", "09:00", "10:00", "hard"),
+        scheduleItem("핫픽스 검증", "13:00", "14:00", "hard")
       ],
       thu: [
-        scheduleItem("아키텍처 리뷰", "10:00", "12:00"),
-        scheduleItem("장애 점검", "13:00", "14:00"),
-        scheduleItem("스프린트", "15:00", "17:00")
+        scheduleItem("장애 회고", "10:00", "12:00", "hard")
       ],
       fri: [
-        scheduleItem("스탠드업", "09:00", "10:00"),
-        scheduleItem("버그 트리아지", "11:00", "12:00"),
-        scheduleItem("배포", "13:00", "15:00"),
-        scheduleItem("기술 리뷰", "16:00", "17:00")
+        scheduleItem("릴리즈 배포", "13:00", "15:00", "hard")
       ]
     }
   },
   {
     id: "p4",
     name: "정우진",
-    role: "데이터 분석가",
-    type: "핵심",
+    role: "프로덕트 데이터 분석가",
+    type: "필수",
     initial: "정",
     color: "#8B6FE8",
     schedule: {
       mon: [
-        scheduleItem("대시보드 점검", "09:30", "10:30"),
-        scheduleItem("데이터 싱크", "11:00", "12:00"),
-        scheduleItem("분석 작업", "14:00", "16:00")
+        scheduleItem("지표 감사", "11:00", "12:00"),
+        scheduleItem("분석 결과 보고", "14:00", "15:30", "hard")
       ],
       tue: [
-        scheduleItem("데이터 싱크", "09:00", "10:00"),
-        scheduleItem("요청사항 정리", "11:00", "12:00"),
-        scheduleItem("ETL 리뷰", "14:00", "15:00"),
-        scheduleItem("리포트", "16:00", "17:00")
+        scheduleItem("실험 결과 리뷰", "13:00", "14:00"),
+        scheduleItem("데이터 배치 점검", "16:00", "17:00")
       ],
       wed: [
-        scheduleItem("대시보드 점검", "09:00", "10:00"),
-        scheduleItem("지표 회의", "10:00", "11:00"),
-        scheduleItem("리뷰", "11:00", "12:00"),
-        scheduleItem("리포트", "15:00", "16:00")
+        scheduleItem("핵심 지표 리뷰", "10:00", "11:00"),
+        scheduleItem("데이터 승인", "15:30", "16:30", "hard")
       ],
       thu: [
-        scheduleItem("스탠드업", "09:00", "10:00"),
-        scheduleItem("지표 리뷰", "11:00", "12:00"),
-        scheduleItem("분석 작업", "13:00", "15:00")
+        scheduleItem("리포트 발행", "09:00", "10:00"),
+        scheduleItem("대시보드 검수", "13:00", "15:00")
       ],
       fri: [
-        scheduleItem("주간 리포트", "09:00", "10:00"),
-        scheduleItem("데이터 QA", "10:00", "11:00"),
-        scheduleItem("대시보드 작업", "13:00", "15:00"),
-        scheduleItem("리포트", "16:00", "17:00")
+        scheduleItem("주간 지표 보고", "09:00", "10:00"),
+        scheduleItem("데이터 반영 확인", "15:00", "16:00")
       ]
     }
   },
   {
     id: "p5",
     name: "최은지",
-    role: "마케팅 매니저",
+    role: "그로스 마케터",
     type: "참조",
     initial: "최",
     color: "#11A7A7",
     schedule: {
       mon: [
-        scheduleItem("캠페인 회의", "10:00", "12:00"),
-        scheduleItem("크리에이티브 리뷰", "13:00", "14:00"),
-        scheduleItem("대행사 미팅", "16:00", "17:00")
+        scheduleItem("캠페인 촬영", "10:00", "12:00"),
+        scheduleItem("대행사 미팅", "16:00", "17:00", "hard")
       ],
       tue: [
-        scheduleItem("캠페인 점검", "09:00", "10:00"),
-        scheduleItem("콘텐츠 회의", "11:00", "12:00"),
-        scheduleItem("대행사 싱크", "15:00", "16:00")
+        scheduleItem("광고 집행 승인", "09:00", "10:00", "hard"),
+        scheduleItem("브랜드 캠페인 리뷰", "15:00", "16:00")
       ],
       wed: [
-        scheduleItem("캠페인 점검", "09:00", "10:00"),
-        scheduleItem("브랜드 체크", "10:00", "11:00"),
-        scheduleItem("콘텐츠 회의", "11:00", "12:00"),
-        scheduleItem("세일즈 싱크", "15:00", "16:00")
+        scheduleItem("세일즈 웨비나", "14:00", "16:00", "hard")
       ],
       thu: [
-        scheduleItem("외부 미팅", "09:00", "12:00"),
-        scheduleItem("기획 정리", "13:00", "14:00"),
-        scheduleItem("내부 공유", "16:00", "17:00")
+        scheduleItem("연차", "09:00", "18:00", "hard")
       ],
       fri: [
-        scheduleItem("캠페인 운영", "09:00", "11:00"),
-        scheduleItem("리뷰", "13:00", "14:00"),
-        scheduleItem("크리에이티브 확인", "14:00", "15:00")
+        scheduleItem("파트너 공동 캠페인", "10:00", "12:00", "hard")
       ]
     }
   },
   {
     id: "p6",
     name: "이재훈",
-    role: "CS 매니저",
+    role: "고객 성공 매니저",
     type: "참조",
     initial: "이",
     color: "#FF5C7A",
     schedule: {
       mon: [
-        scheduleItem("티켓 확인", "09:00", "10:00"),
-        scheduleItem("VOC 리뷰", "11:00", "12:00"),
-        scheduleItem("고객 콜", "13:00", "15:00"),
-        scheduleItem("CS 싱크", "16:00", "17:00")
+        scheduleItem("고객 온보딩", "13:00", "15:00", "hard"),
+        scheduleItem("엔터프라이즈 콜", "17:00", "18:00", "hard")
       ],
       tue: [
-        scheduleItem("VOC 확인", "09:00", "10:00"),
-        scheduleItem("CS 싱크", "11:00", "12:00"),
-        scheduleItem("교육", "14:00", "15:00"),
-        scheduleItem("리포트", "16:00", "17:00")
+        scheduleItem("오전 반차", "09:00", "13:00", "hard"),
+        scheduleItem("장애 고객 콜", "15:00", "16:00", "hard")
       ],
       wed: [
-        scheduleItem("VOC 확인", "09:00", "10:00"),
-        scheduleItem("티켓 정리", "10:00", "11:00"),
-        scheduleItem("CS 싱크", "11:00", "12:00"),
-        scheduleItem("고객 콜", "15:00", "16:00")
+        scheduleItem("VIP 고객 콜", "15:00", "16:00", "hard")
       ],
       thu: [
-        scheduleItem("고객 미팅", "10:00", "12:00"),
-        scheduleItem("교육", "13:00", "14:00"),
-        scheduleItem("CS 대응", "15:00", "17:00")
+        scheduleItem("고객 방문", "10:00", "12:00", "hard"),
+        scheduleItem("도입 고객 대응", "15:00", "17:00", "hard")
       ],
       fri: [
-        scheduleItem("VOC 확인", "09:00", "10:00"),
-        scheduleItem("싱크", "10:00", "11:00"),
-        scheduleItem("티켓 정리", "11:00", "12:00"),
-        scheduleItem("주간 공유", "13:00", "14:00"),
-        scheduleItem("문서화", "14:00", "15:00"),
-        scheduleItem("CS 싱크", "16:00", "17:00")
+        scheduleItem("전사 교육", "09:00", "12:00"),
+        scheduleItem("오후 휴가", "13:00", "18:00", "hard")
       ]
     }
   }
@@ -309,6 +250,7 @@ const state = {
   selectedDay: "wed",
   selectedCandidate: null,
   meetingLength: DEFAULT_MEETING_LENGTH,
+  meetingTitle: DEFAULT_MEETING_TITLE,
   showPersonal: true,
   showAllCandidates: false,
   mobileCandidatesOpen: false,
@@ -319,8 +261,10 @@ const state = {
   myAvailability: null,
   myAvailabilityPaints: null,
   myAvailabilityNotes: null,
+  myAvailabilityAllowsLunch: false,
   availabilityDraft: null,
   availabilityDraftNotes: null,
+  availabilityDraftAllowsLunch: false,
   availabilityDragging: false,
   availabilityDragMode: "meeting",
   availabilityPaintMode: "meeting",
@@ -379,6 +323,8 @@ const els = {
   confirmModalIcon: document.getElementById("confirmModalIcon"),
   confirmModalTitle: document.getElementById("confirmModalTitle"),
   confirmModalMessage: document.getElementById("confirmModalMessage"),
+  confirmTitleField: document.getElementById("confirmTitleField"),
+  confirmMeetingTitleInput: document.getElementById("confirmMeetingTitleInput"),
   confirmModalDate: document.getElementById("confirmModalDate"),
   confirmModalTime: document.getElementById("confirmModalTime"),
   confirmModalAttendees: document.getElementById("confirmModalAttendees"),
@@ -388,6 +334,8 @@ const els = {
   availabilityModalClose: document.getElementById("availabilityModalClose"),
   availabilityGrid: document.getElementById("availabilityGrid"),
   availabilitySummary: document.getElementById("availabilitySummary"),
+  availabilityDurationBadge: document.getElementById("availabilityDurationBadge"),
+  allowLunchMeetingInput: document.getElementById("allowLunchMeetingInput"),
   availabilityPaintChoices: document.querySelectorAll(".paint-choice"),
   noteModal: document.getElementById("noteModal"),
   noteModalClose: document.getElementById("noteModalClose"),
@@ -405,11 +353,41 @@ const els = {
   saveAvailabilityBtn: document.getElementById("saveAvailabilityBtn")
 };
 
+function validateDomRefs(refs) {
+  const missing = Object.entries(refs)
+    .filter(([, value]) => {
+      if (value instanceof NodeList) return value.length === 0;
+      return !value;
+    })
+    .map(([key]) => key);
+
+  if (missing.length) {
+    throw new Error(`MeetFit DOM reference missing: ${missing.join(", ")}`);
+  }
+}
+
+validateDomRefs(els);
+
 let availabilityFeedbackTimer = null;
 let entryFeedbackTimers = [];
 
 function selectedPeople() {
   return people.filter(person => state.selectedIds.includes(person.id));
+}
+
+function requiredPeople() {
+  const selected = selectedPeople();
+  const required = selected.filter(person => person.type !== "참조");
+  return required.length ? required : selected;
+}
+
+function referencePeople() {
+  const selected = selectedPeople();
+  const hasRequired = selected.some(person => person.type !== "참조");
+
+  if (!hasRequired) return [];
+
+  return selected.filter(person => person.type === "참조");
 }
 
 function displayDay(dayOrKey) {
@@ -560,6 +538,61 @@ function cloneAvailabilityNotes(notes) {
   );
 }
 
+function schedulePaintMode(item = {}) {
+  if (item.isGlobal) return "lunch";
+  if (scheduleTone(item) === "vacation") return "vacation";
+  if (scheduleTone(item) === "external") return "travel";
+  return "meeting";
+}
+
+function myBaseAvailabilityDraft() {
+  const me = people.find(person => person.isMe);
+  const draft = blankAvailabilityDraft(null);
+
+  if (!me) return draft;
+
+  days.forEach(day => {
+    baseBlockedScheduleFor(me, day.key).forEach(item => {
+      const mode = schedulePaintMode(item);
+      const startIndex = Math.max(0, Math.floor(item.start / AVAILABILITY_STEP));
+      const endIndex = Math.min(
+        AVAILABILITY_SLOT_COUNT,
+        Math.ceil(item.end / AVAILABILITY_STEP)
+      );
+
+      for (let index = startIndex; index < endIndex; index += 1) {
+        draft[day.key][index] = mode;
+      }
+    });
+  });
+
+  return draft;
+}
+
+function myBaseAvailabilityNotes() {
+  const me = people.find(person => person.isMe);
+  const notes = blankAvailabilityNotes();
+
+  if (!me) return notes;
+
+  days.forEach(day => {
+    baseBlockedScheduleFor(me, day.key).forEach(item => {
+      const detail = { ...emptyNoteDetail(), title: item.title };
+      const startIndex = Math.max(0, Math.floor(item.start / AVAILABILITY_STEP));
+      const endIndex = Math.min(
+        AVAILABILITY_SLOT_COUNT,
+        Math.ceil(item.end / AVAILABILITY_STEP)
+      );
+
+      for (let index = startIndex; index < endIndex; index += 1) {
+        notes[day.key][index] = detail;
+      }
+    });
+  });
+
+  return notes;
+}
+
 function intervalsToSlots(intervals) {
   const slots = Array.from({ length: AVAILABILITY_SLOT_COUNT }, () => false);
 
@@ -691,12 +724,46 @@ function compactScheduleTitle(title) {
   return cleanTitle.length > 8 ? `${cleanTitle.slice(0, 8)}...` : cleanTitle;
 }
 
+function meetingTitle() {
+  return (state.meetingTitle || DEFAULT_MEETING_TITLE).trim() || DEFAULT_MEETING_TITLE;
+}
+
+function compactMeetingTitle() {
+  const normalized = meetingTitle()
+    .replace(/신규|플로우|온보딩/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const fallback = normalized || meetingTitle();
+  return fallback.length > 6 ? `${fallback.slice(0, 6)}...` : fallback;
+}
+
+function scheduleTone(item = {}) {
+  const title = item.title || "";
+  if (/휴가|반차|연차/.test(title)) return "vacation";
+  if (/배포|장애|긴급|핫픽스/.test(title)) return "critical";
+  if (/고객|콜|임원|경영진|파트너|외부|방문|대행사|VIP/.test(title)) return "external";
+  if (/승인|의사결정|보고/.test(title)) return "approval";
+  return "";
+}
+
+function scheduleBlocksMeeting(item = {}) {
+  if (item.isGlobal) return true;
+  if (item.importance) return item.importance === "hard";
+  return ["vacation", "critical", "external", "approval"].includes(scheduleTone(item));
+}
+
+function scheduleStroke(person, item) {
+  if (item.isGlobal) return "#cbd5e1";
+  if (scheduleTone(item) === "vacation") return "#fb7185";
+  return person.color;
+}
+
 function createScheduleLabel(person, item, radius) {
   if (item.isGlobal || item.end - item.start < 60) return null;
 
   const pathId = `schedule-label-path-${scheduleLabelPathId += 1}`;
   const group = createSvg("g", {
-    class: "arc-schedule-label"
+    class: `arc-schedule-label ${scheduleTone(item)}`
   });
   const labelPath = createSvg("path", {
     id: pathId,
@@ -736,6 +803,63 @@ function createScheduleLabel(person, item, radius) {
   return group;
 }
 
+function createConfirmedMeetingLayer(candidate, innerEdge, outerEdge) {
+  const pathId = `confirmed-meeting-path-${scheduleLabelPathId += 1}`;
+  const midRadius = (innerEdge + outerEdge) / 2;
+  const group = createSvg("g", {
+    class: "confirmed-meeting-layer",
+    "aria-label": `${meetingTitle()} ${timeRangeLabel(candidate.start, candidate.end)} 확정됨`
+  });
+
+  const band = createSvg("path", {
+    d: describeAnnularSector(
+      CHART.cx,
+      CHART.cy,
+      innerEdge,
+      outerEdge,
+      angleForMinute(candidate.start),
+      angleForMinute(candidate.end)
+    ),
+    class: "confirmed-meeting-band"
+  });
+  const labelPath = createSvg("path", {
+    id: pathId,
+    d: describeArc(
+      CHART.cx,
+      CHART.cy,
+      midRadius,
+      angleForMinute(candidate.start),
+      angleForMinute(candidate.end)
+    ),
+    class: "confirmed-meeting-label-path"
+  });
+  const titleText = createSvg("text", {
+    class: "confirmed-meeting-title",
+    dy: "-4"
+  });
+  const titlePath = createSvg("textPath", {
+    href: `#${pathId}`,
+    startOffset: "50%",
+    "text-anchor": "middle"
+  });
+  const timeText = createSvg("text", {
+    class: "confirmed-meeting-time",
+    dy: "9"
+  });
+  const timePath = createSvg("textPath", {
+    href: `#${pathId}`,
+    startOffset: "50%",
+    "text-anchor": "middle"
+  });
+
+  titlePath.textContent = compactMeetingTitle();
+  timePath.textContent = timeRangeLabel(candidate.start, candidate.end).replace(" - ", "-");
+  titleText.appendChild(titlePath);
+  timeText.appendChild(timePath);
+  group.append(band, labelPath, titleText, timeText);
+  return group;
+}
+
 function ringLayout(ringCount) {
   if (ringCount <= 4) {
     return {
@@ -768,12 +892,80 @@ function baseBlockedScheduleFor(person, dayKey) {
   ];
 }
 
+function customLunchBlockers() {
+  return state.myAvailabilityAllowsLunch ? [] : [[LUNCH_START, LUNCH_END]];
+}
+
 function customAvailabilityForDay(dayKey) {
   if (!state.myAvailabilitySaved || !state.myAvailability) return null;
-  return subtractIntervals(state.myAvailability[dayKey] || [], [[LUNCH_START, LUNCH_END]]);
+  return subtractIntervals(state.myAvailability[dayKey] || [], customLunchBlockers());
+}
+
+function sameNoteDetail(a, b) {
+  const left = normalizeNoteDetail(a);
+  const right = normalizeNoteDetail(b);
+  return left.title === right.title &&
+    left.people === right.people &&
+    left.place === right.place;
+}
+
+function customBlockedScheduleForDay(dayKey) {
+  if (!state.myAvailabilitySaved || !state.myAvailabilityPaints) return null;
+
+  const slots = state.myAvailabilityPaints[dayKey] || [];
+  const notes = state.myAvailabilityNotes?.[dayKey] || [];
+  const items = [];
+  let startIndex = null;
+  let currentMode = null;
+  let currentNote = null;
+
+  const pushItem = endIndex => {
+    if (startIndex === null || !currentMode) return;
+
+    const note = normalizeNoteDetail(currentNote);
+    items.push({
+      title: noteTitle(note, AVAILABILITY_PAINT_MODES[currentMode] || "일정 있음"),
+      start: startIndex * AVAILABILITY_STEP,
+      end: endIndex * AVAILABILITY_STEP,
+      isGlobal: currentMode === "lunch",
+      note
+    });
+  };
+
+  for (let index = 0; index <= AVAILABILITY_SLOT_COUNT; index += 1) {
+    const mode = index < AVAILABILITY_SLOT_COUNT ? slotPaintMode(slots[index]) : null;
+    const note = index < AVAILABILITY_SLOT_COUNT ? notes[index] : null;
+    const keepsRange = mode &&
+      mode === currentMode &&
+      sameNoteDetail(note, currentNote);
+
+    if (keepsRange) continue;
+
+    pushItem(index);
+    startIndex = mode ? index : null;
+    currentMode = mode;
+    currentNote = mode ? note : null;
+  }
+
+  const hasLunchBlock = items.some(item => item.start < LUNCH_END && item.end > LUNCH_START);
+  if (!state.myAvailabilityAllowsLunch && !hasLunchBlock) {
+    items.push({
+      title: "점심시간",
+      start: LUNCH_START,
+      end: LUNCH_END,
+      isGlobal: true
+    });
+  }
+
+  return items.sort((a, b) => a.start - b.start);
 }
 
 function blockedScheduleFor(person, dayKey) {
+  const customBlocked = person.isMe ? customBlockedScheduleForDay(dayKey) : null;
+  if (customBlocked) {
+    return customBlocked;
+  }
+
   const customAvailability = person.isMe ? customAvailabilityForDay(dayKey) : null;
 
   if (!customAvailability) {
@@ -790,6 +982,7 @@ function blockedScheduleFor(person, dayKey) {
 
 function baseAvailabilityFor(person, dayKey) {
   const blocked = baseBlockedScheduleFor(person, dayKey)
+    .filter(scheduleBlocksMeeting)
     .map(item => [Math.max(0, item.start), Math.min(WORK_MINUTES, item.end)])
     .filter(([start, end]) => end > start)
     .sort((a, b) => a[0] - b[0]);
@@ -838,7 +1031,7 @@ function currentMyAvailabilityDraft() {
     );
   }
 
-  return blankAvailabilityDraft(null);
+  return myBaseAvailabilityDraft();
 }
 
 function currentMyAvailabilityNotes() {
@@ -846,7 +1039,7 @@ function currentMyAvailabilityNotes() {
     return cloneAvailabilityNotes(state.myAvailabilityNotes);
   }
 
-  return blankAvailabilityNotes();
+  return myBaseAvailabilityNotes();
 }
 
 function setDraftDay(dayKey, value) {
@@ -873,6 +1066,36 @@ function setDraftLunch(value) {
   });
 }
 
+function applyDraftLunchPreference() {
+  if (!state.availabilityDraft || !state.availabilityDraftNotes) return;
+
+  days.forEach(day => {
+    for (
+      let minute = LUNCH_START;
+      minute < LUNCH_END;
+      minute += AVAILABILITY_STEP
+    ) {
+      const index = minute / AVAILABILITY_STEP;
+      const currentMode = slotPaintMode(state.availabilityDraft[day.key][index]);
+
+      if (state.availabilityDraftAllowsLunch) {
+        if (currentMode === "lunch") {
+          state.availabilityDraft[day.key][index] = null;
+          state.availabilityDraftNotes[day.key][index] = emptyNoteDetail();
+        }
+        continue;
+      }
+
+      state.availabilityDraft[day.key][index] = "lunch";
+      state.availabilityDraftNotes[day.key][index] = { ...emptyNoteDetail(), title: "점심" };
+    }
+  });
+}
+
+function renderLunchPreference() {
+  els.allowLunchMeetingInput.checked = state.availabilityDraftAllowsLunch;
+}
+
 function selectedDraftMinutes() {
   return days.reduce((total, day) => {
     return total + state.availabilityDraft[day.key].filter(isAvailableSlot).length * AVAILABILITY_STEP;
@@ -892,15 +1115,20 @@ function renderAvailabilitySummary() {
   }, 0);
   const hours = Math.floor(selectedMinutes / 60);
   const minutes = selectedMinutes % 60;
-  const durationLabel = `${hours}시간${minutes ? ` ${minutes}분` : ""}`;
+  const availableDurationText = `${hours}시간${minutes ? ` ${minutes}분` : ""}`;
+  const meetingDurationText = durationLabel();
+  const lunchLabel = state.availabilityDraftAllowsLunch ? " · 점심 후보 포함" : " · 점심 제외";
+
+  els.availabilityDurationBadge.textContent = meetingDurationText;
+  els.saveAvailabilityBtn.textContent = `저장하고 ${meetingDurationText} 후보 보기`;
 
   if (!blockedSlots) {
-    els.availabilitySummary.textContent = `가능 5일 · ${durationLabel}`;
+    els.availabilitySummary.textContent = `가능 5일 · ${availableDurationText}${lunchLabel} · 추천 기준 ${meetingDurationText}`;
     return;
   }
 
   const blockedLabel = blockedSlots ? ` · 일정 표시 ${blockedSlots}칸` : "";
-  els.availabilitySummary.textContent = `가능 ${availableDays}일 · ${durationLabel}${blockedLabel}`;
+  els.availabilitySummary.textContent = `가능 ${availableDays}일 · ${availableDurationText}${blockedLabel}${lunchLabel} · 추천 기준 ${meetingDurationText}`;
 }
 
 function updateDraftCell(cell, paintMode) {
@@ -1143,12 +1371,17 @@ function renderAvailabilityGrid() {
   });
 
   renderAvailabilitySummary();
+  renderLunchPreference();
   renderAvailabilityPaintChoices();
 }
 
 function openAvailabilityModal() {
   state.availabilityDraft = currentMyAvailabilityDraft();
   state.availabilityDraftNotes = currentMyAvailabilityNotes();
+  state.availabilityDraftAllowsLunch = state.myAvailabilitySaved
+    ? state.myAvailabilityAllowsLunch
+    : false;
+  applyDraftLunchPreference();
   renderAvailabilityGrid();
   els.availabilityEntryBtn.classList.add("active");
   els.availabilityModal.hidden = false;
@@ -1165,9 +1398,11 @@ function closeAvailabilityModal() {
 }
 
 function saveAvailability() {
+  applyDraftLunchPreference();
   state.myAvailability = draftToAvailability(state.availabilityDraft);
   state.myAvailabilityPaints = cloneAvailabilityDraft(state.availabilityDraft);
   state.myAvailabilityNotes = cloneAvailabilityNotes(state.availabilityDraftNotes);
+  state.myAvailabilityAllowsLunch = state.availabilityDraftAllowsLunch;
   state.myAvailabilitySaved = true;
   state.availabilityFeedback = true;
   state.confirmedCandidate = null;
@@ -1196,12 +1431,17 @@ function saveAvailability() {
 }
 
 function renderAvailabilityEntry() {
+  const title = els.availabilityEntryBtn.querySelector("strong");
+  const caption = els.availabilityEntryBtn.querySelector("small");
+
+  if (!title || !caption) return;
+
   els.availabilityEntryBtn.classList.toggle("saved", state.myAvailabilitySaved);
   els.availabilityEntryBtn.classList.toggle("just-saved", state.availabilityFeedback);
-  els.availabilityEntryBtn.querySelector("strong").textContent = state.myAvailabilitySaved
+  title.textContent = state.myAvailabilitySaved
     ? "내 가능 시간 수정하기"
     : "내 가능 시간 등록하기";
-  els.availabilityEntryBtn.querySelector("small").textContent = state.myAvailabilitySaved
+  caption.textContent = state.myAvailabilitySaved
     ? state.availabilityFeedback
       ? "내 가능 시간이 반영됐어요."
       : "저장된 내 시간을 기준으로 추천 중"
@@ -1326,7 +1566,12 @@ function showScheduleDetail(person, item, event, anchorElement) {
   els.scheduleDetailColor.style.background = item.isGlobal ? "#94a3b8" : person.color;
   els.scheduleDetailPerson.textContent = personLabel;
   els.scheduleDetailTitle.textContent = item.isGlobal ? "점심시간 · 공통 제외" : item.title;
-  els.scheduleDetailTime.textContent = `${day.full} · ${timeRangeLabel(item.start, item.end)}`;
+  const noteDetail = item.note ? noteSummary(item.note) : "";
+  els.scheduleDetailTime.textContent = [
+    day.full,
+    timeRangeLabel(item.start, item.end),
+    noteDetail
+  ].filter(Boolean).join(" · ");
   els.scheduleDetail.hidden = false;
   positionScheduleDetail(event, anchorElement);
 }
@@ -1358,14 +1603,56 @@ function intersectTwo(a, b) {
   return result;
 }
 
+function canAttendCandidate(person, candidate) {
+  return availabilityFor(person, candidate.day).some(([start, end]) =>
+    start <= candidate.start && end >= candidate.end
+  );
+}
+
+function candidateFit(candidate) {
+  const required = requiredPeople();
+  const references = referencePeople();
+  const referenceAvailable = references.filter(person => canAttendCandidate(person, candidate));
+  const avoidsLunch = !(candidate.start < POST_LUNCH_END && candidate.end > LUNCH_START);
+  const avoidsLate = candidate.end <= COMFORT_END;
+  const comfortable = candidate.start >= COMFORT_START && avoidsLunch && avoidsLate;
+
+  return {
+    requiredCount: required.length,
+    referenceCount: references.length,
+    referenceAvailableCount: referenceAvailable.length,
+    comfortable
+  };
+}
+
+function candidateSupportLine(candidate) {
+  if (!candidate) return "";
+
+  const fit = candidateFit(candidate);
+  const allSelectedCount = fit.requiredCount + fit.referenceCount;
+  const allReferencesAvailable = fit.referenceCount > 0 &&
+    fit.referenceAvailableCount === fit.referenceCount;
+  const primary = allReferencesAvailable || fit.referenceCount === 0
+    ? `선택한 ${allSelectedCount}명 모두 가능`
+    : `필수 ${fit.requiredCount}명 모두 가능`;
+  const reference = fit.referenceCount && !allReferencesAvailable
+    ? `참조 ${fit.referenceAvailableCount}/${fit.referenceCount}명 가능`
+    : null;
+  const comfort = fit.comfortable
+    ? "점심/퇴근 직전 제외"
+    : "업무 흐름 기준 추천";
+
+  return [primary, reference, comfort].filter(Boolean).join(" · ");
+}
+
 function commonIntervalsForDay(dayKey) {
-  const selected = selectedPeople();
+  const selected = requiredPeople();
 
   if (selected.length === 0) {
     return [];
   }
 
-  // 공통 시간은 각 사람의 확정 일정이 아닌 빈 시간 교집합으로만 만든다.
+  // 공통 시간은 필수 참석자의 강한 차단 일정만 제외한 빈 시간 교집합으로 만든다.
   let common = availabilityFor(selected[0], dayKey).map(interval => [...interval]);
 
   selected.slice(1).forEach(person => {
@@ -1388,9 +1675,12 @@ function scoreCandidate(candidate) {
     fri: 0
   };
   const overlapsPostLunch = candidate.start < POST_LUNCH_END && candidate.end > LUNCH_END;
+  const fit = candidateFit(candidate);
   let score = 400 - Math.abs(candidate.start - PREFERRED_START) * 0.3;
 
   score += dayPreference[candidate.day];
+  score += fit.referenceAvailableCount * 34;
+  if (fit.referenceCount && fit.referenceAvailableCount === fit.referenceCount) score += 22;
   if (candidate.start === PREFERRED_START) score += 40;
   if (candidate.start === 10 * 60 - START_OF_DAY) score += 50;
   if (overlapsPostLunch) score -= 200;
@@ -1478,12 +1768,6 @@ function candidatesForDay(dayKey) {
 function selectCandidate(candidate) {
   if (!candidate) return;
 
-  if (state.confirmedCandidate && !sameCandidate(candidate, state.confirmedCandidate)) {
-    state.confirmedCandidate = null;
-    state.calendarAdded = false;
-    state.shareUpdatedText = "방금 업데이트됨";
-  }
-
   state.selectedDay = candidate.day;
   state.selectedCandidate = {
     day: candidate.day,
@@ -1532,8 +1816,13 @@ function isWithinChartRing(event) {
 }
 
 function candidateFromChartRange(rangeStart, rangeEnd, event = null) {
-  const candidates = candidatesForDay(state.selectedDay)
+  let candidates = candidatesForDay(state.selectedDay)
     .filter(candidate => candidate.start >= rangeStart && candidate.end <= rangeEnd);
+
+  if (!candidates.length) {
+    candidates = candidatesForDay(state.selectedDay)
+      .filter(candidate => candidate.start >= rangeStart && candidate.start < rangeEnd);
+  }
 
   if (!candidates.length) return null;
   if (!event || !Number.isFinite(event.clientX)) return candidates[0];
@@ -1548,6 +1837,30 @@ function candidateFromChartRange(rangeStart, rangeEnd, event = null) {
   return [...pool].sort((a, b) =>
     Math.abs(a.start - targetStart) - Math.abs(b.start - targetStart)
   )[0];
+}
+
+function appendThirtyMinuteDividers(svg, start, end, innerEdge, outerEdge) {
+  if (state.meetingLength !== AVAILABILITY_STEP) return;
+
+  for (
+    let minute = Math.ceil(start / AVAILABILITY_STEP) * AVAILABILITY_STEP;
+    minute < end;
+    minute += AVAILABILITY_STEP
+  ) {
+    if (minute <= start) continue;
+
+    const angle = angleForMinute(minute);
+    const lineStart = polar(CHART.cx, CHART.cy, innerEdge + 3, angle);
+    const lineEnd = polar(CHART.cx, CHART.cy, outerEdge - 3, angle);
+
+    svg.appendChild(createSvg("line", {
+      x1: lineStart.x,
+      y1: lineStart.y,
+      x2: lineEnd.x,
+      y2: lineEnd.y,
+      class: "common-slot-divider"
+    }));
+  }
 }
 
 function candidateFromChartEvent(event) {
@@ -1585,10 +1898,16 @@ function cycleCenterCandidate() {
 
 function renderParticipants() {
   const selected = selectedPeople();
+  const required = requiredPeople();
+  const references = referencePeople();
 
   els.selectionCount.textContent = `선택 ${selected.length}/6`;
-  els.selectedSummary.textContent = `선택한 ${selected.length}명 기준`;
-  els.asideDesc.textContent = `선택한 ${selected.length}명이 동시에 비어 있는 후보입니다.`;
+  els.selectedSummary.textContent = references.length
+    ? `필수 ${required.length}명 · 참조 ${references.length}명`
+    : `필수 ${required.length}명 기준`;
+  els.asideDesc.textContent = references.length
+    ? `필수 ${required.length}명은 반드시 가능, 참조 ${references.length}명은 추천 점수에 반영됩니다.`
+    : `필수 ${required.length}명이 동시에 비어 있는 후보입니다.`;
   els.durationOptions.forEach(button => {
     const active = Number(button.dataset.duration) === state.meetingLength;
     button.classList.toggle("active", active);
@@ -1682,10 +2001,6 @@ function renderWeek() {
         selectCandidate(firstForDay);
       } else {
         state.selectedCandidate = null;
-        if (state.confirmedCandidate?.day !== state.selectedDay) {
-          state.confirmedCandidate = null;
-          state.calendarAdded = false;
-        }
         renderAll();
       }
     });
@@ -1714,19 +2029,62 @@ function renderChart() {
   const innerRadius = outerRadius - (ringCount - 1) * (ringWidth + gap);
   const innerEdge = innerRadius - ringWidth / 2;
   const outerEdge = outerRadius + ringWidth / 2;
+  const requiredRingCount = selected.filter(person => person.type !== "참조").length || ringCount;
   const indexDotRadius = Math.max(8, Math.min(12, ringWidth * 0.55));
   const common = commonIntervalsForDay(state.selectedDay);
+  const confirmedCandidate = confirmedCandidateForCurrentWeek();
   const selectedRange = highlightedCandidate?.day === state.selectedDay
     ? [highlightedCandidate.start, highlightedCandidate.end]
     : null;
+  const confirmedRange = confirmedCandidate?.day === state.selectedDay
+    ? [confirmedCandidate.start, confirmedCandidate.end]
+    : null;
+  const innerEdgeForRingCount = count => {
+    const coveredRadius = outerRadius - (count - 1) * (ringWidth + gap);
+    return coveredRadius - ringWidth / 2;
+  };
+  const ringEdgesForIndex = index => {
+    const radius = outerRadius - index * (ringWidth + gap);
+    return {
+      inner: radius - ringWidth / 2,
+      outer: radius + ringWidth / 2
+    };
+  };
+  const isAvailableForRange = (person, start, end) =>
+    availabilityFor(person, state.selectedDay).some(([availableStart, availableEnd]) =>
+      availableStart <= start && availableEnd >= end
+    );
+  const requiredInnerEdge = innerEdgeForRingCount(requiredRingCount);
+  const referenceRingIndexesForRange = (start, end) =>
+    selected
+      .map((person, index) => ({ person, index }))
+      .filter(({ index }) => index >= requiredRingCount)
+      .filter(({ person }) => isAvailableForRange(person, start, end))
+      .map(({ index }) => index);
 
   const splitCommonBand = (start, end) => {
     const boundaries = [start, end];
+
+    if (state.meetingLength === AVAILABILITY_STEP) {
+      for (
+        let minute = Math.ceil(start / AVAILABILITY_STEP) * AVAILABILITY_STEP;
+        minute < end;
+        minute += AVAILABILITY_STEP
+      ) {
+        if (minute > start) boundaries.push(minute);
+      }
+    }
 
     if (selectedRange) {
       const [selectedStart, selectedEnd] = selectedRange;
       if (selectedStart > start && selectedStart < end) boundaries.push(selectedStart);
       if (selectedEnd > start && selectedEnd < end) boundaries.push(selectedEnd);
+    }
+
+    if (confirmedRange) {
+      const [confirmedStart, confirmedEnd] = confirmedRange;
+      if (confirmedStart > start && confirmedStart < end) boundaries.push(confirmedStart);
+      if (confirmedEnd > start && confirmedEnd < end) boundaries.push(confirmedEnd);
     }
 
     const sorted = [...new Set(boundaries)].sort((a, b) => a - b);
@@ -1736,11 +2094,13 @@ function renderChart() {
       const midpoint = (segmentStart + segmentEnd) / 2;
       const isSelected = selectedRange &&
         midpoint >= selectedRange[0] && midpoint < selectedRange[1];
+      const isConfirmed = confirmedRange &&
+        midpoint >= confirmedRange[0] && midpoint < confirmedRange[1];
 
       return {
         start: segmentStart,
         end: segmentEnd,
-        type: isSelected ? "selected" : "common"
+        type: isConfirmed ? "confirmed-base" : isSelected ? "selected" : "common"
       };
     });
   };
@@ -1783,6 +2143,7 @@ function renderChart() {
 
   selected.forEach((person, index) => {
     const radius = outerRadius - index * (ringWidth + gap);
+    const displayedSchedule = blockedScheduleFor(person, state.selectedDay);
 
     svg.appendChild(createSvg("path", {
       d: describeArc(
@@ -1795,7 +2156,7 @@ function renderChart() {
       class: "arc-base"
     }));
 
-    blockedScheduleFor(person, state.selectedDay).forEach(item => {
+    displayedSchedule.forEach(item => {
       const path = createSvg("path", {
         d: describeArc(
           CHART.cx,
@@ -1804,8 +2165,8 @@ function renderChart() {
           angleForMinute(item.start),
           angleForMinute(item.end)
         ),
-        class: `arc-busy ${item.isGlobal ? "global" : ""}`,
-        stroke: item.isGlobal ? "#cbd5e1" : person.color,
+        class: `arc-busy ${scheduleBlocksMeeting(item) ? "hard-block" : "soft-block"} ${item.isGlobal ? "global" : ""} ${scheduleTone(item)}`,
+        stroke: scheduleStroke(person, item),
         tabindex: "0",
         role: "button",
         "aria-label": `${person.name} ${item.title} ${timeRangeLabel(item.start, item.end)}`
@@ -1845,13 +2206,19 @@ function renderChart() {
       }));
     });
 
-    const schedule = [...person.schedule[state.selectedDay]].sort(
-      (a, b) => a.start - b.start
-    );
+    const schedule = displayedSchedule
+      .filter(item => !item.isGlobal)
+      .sort((a, b) => a.start - b.start);
 
     schedule.slice(0, -1).forEach((item, scheduleIndex) => {
       const nextItem = schedule[scheduleIndex + 1];
       if (item.end !== nextItem.start) return;
+      if (
+        item.title === nextItem.title &&
+        sameNoteDetail(item.note, nextItem.note)
+      ) {
+        return;
+      }
 
       const angle = angleForMinute(item.end);
       const lineStart = polar(
@@ -1877,46 +2244,84 @@ function renderChart() {
     });
   });
 
+  const appendCommonBand = (segment, inner, outer, extraClass = "") => {
+    const candidate = candidateFromChartRange(segment.start, segment.end);
+    const band = createSvg("path", {
+      d: describeAnnularSector(
+        CHART.cx,
+        CHART.cy,
+        inner,
+        outer,
+        angleForMinute(segment.start),
+        angleForMinute(segment.end)
+      ),
+      class: `common-band ${segment.type} ${extraClass}`.trim(),
+      tabindex: candidate ? "0" : "-1",
+      role: candidate ? "button" : "presentation",
+      "aria-label": candidate
+        ? `${displayDay(state.selectedDay).full} ${timeRangeLabel(candidate.start, candidate.end)} 공통 가능 시간 선택`
+        : "공통 가능 시간"
+    });
+
+    if (candidate) {
+      const chooseCandidate = event => {
+        event.preventDefault();
+        event.stopPropagation();
+        event.currentTarget.blur?.();
+        selectCandidate(candidateFromChartRange(segment.start, segment.end, event));
+      };
+
+      band.addEventListener("click", chooseCandidate);
+      band.addEventListener("keydown", event => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        chooseCandidate(event);
+      });
+    }
+
+    svg.appendChild(band);
+  };
+
   common.forEach(([start, end]) => {
     splitCommonBand(start, end).forEach(segment => {
       if (segment.end <= segment.start) return;
 
-      const candidate = candidateFromChartRange(segment.start, segment.end);
-      const band = createSvg("path", {
+      appendCommonBand(segment, requiredInnerEdge, outerEdge);
+
+      referenceRingIndexesForRange(segment.start, segment.end).forEach(index => {
+        const { inner, outer } = ringEdgesForIndex(index);
+        appendCommonBand(segment, inner, outer, "reference-band");
+      });
+    });
+
+    appendThirtyMinuteDividers(svg, start, end, requiredInnerEdge, outerEdge);
+    referenceRingIndexesForRange(start, end).forEach(index => {
+      const { inner, outer } = ringEdgesForIndex(index);
+      appendThirtyMinuteDividers(svg, start, end, inner, outer);
+    });
+  });
+
+  if (confirmedRange) {
+    svg.appendChild(createConfirmedMeetingLayer(
+      confirmedCandidate,
+      requiredInnerEdge,
+      outerEdge
+    ));
+
+    referenceRingIndexesForRange(confirmedCandidate.start, confirmedCandidate.end).forEach(index => {
+      const { inner, outer } = ringEdgesForIndex(index);
+      svg.appendChild(createSvg("path", {
         d: describeAnnularSector(
           CHART.cx,
           CHART.cy,
-          innerEdge,
-          outerEdge,
-          angleForMinute(segment.start),
-          angleForMinute(segment.end)
+          inner,
+          outer,
+          angleForMinute(confirmedCandidate.start),
+          angleForMinute(confirmedCandidate.end)
         ),
-        class: `common-band ${segment.type}`,
-        tabindex: candidate ? "0" : "-1",
-        role: candidate ? "button" : "presentation",
-        "aria-label": candidate
-          ? `${displayDay(state.selectedDay).full} ${timeRangeLabel(candidate.start, candidate.end)} 공통 가능 시간 선택`
-          : "공통 가능 시간"
-      });
-
-      if (candidate) {
-        const chooseCandidate = event => {
-          event.preventDefault();
-          event.stopPropagation();
-          event.currentTarget.blur?.();
-          selectCandidate(candidateFromChartRange(segment.start, segment.end, event));
-        };
-
-        band.addEventListener("click", chooseCandidate);
-        band.addEventListener("keydown", event => {
-          if (event.key !== "Enter" && event.key !== " ") return;
-          chooseCandidate(event);
-        });
-      }
-
-      svg.appendChild(band);
+        class: "confirmed-meeting-band confirmed-reference-band"
+      }));
     });
-  });
+  }
 
   selected.forEach((person, index) => {
     const radius = outerRadius - index * (ringWidth + gap);
@@ -1945,16 +2350,16 @@ function renderCenter() {
   const candidate = state.selectedCandidate;
   const candidates = generateCandidates();
   const recommendation = recommendedCandidate(candidates);
-  const selected = selectedPeople();
   const needsMyAvailability = !state.myAvailabilitySaved;
   const dayCandidates = candidates
     .filter(item => item.day === state.selectedDay)
     .sort((a, b) => a.start - b.start);
   const isCurrentConfirmed = Boolean(candidate && isConfirmedCandidate(candidate));
-  const canSwitch = Boolean(candidate && !isCurrentConfirmed && dayCandidates.length > 1);
+  const canSwitch = Boolean(candidate && dayCandidates.length > 1);
 
   els.centerCard.classList.toggle("switchable", canSwitch);
-  els.centerCard.classList.toggle("saved-feedback", Boolean(candidate && state.availabilityFeedback));
+  els.centerCard.classList.toggle("confirmed", isCurrentConfirmed);
+  els.centerCard.classList.toggle("saved-feedback", false);
   els.centerSwitchHint.hidden = !canSwitch;
   els.centerCard.tabIndex = canSwitch ? 0 : -1;
 
@@ -1978,6 +2383,7 @@ function renderCenter() {
 
   if (!candidate) {
     const day = days.find(item => item.key === state.selectedDay);
+    const references = referencePeople();
     els.confirmBtn.classList.remove("confirmed");
     els.confirmBtn.classList.remove("soft-priority");
     els.actionRow.classList.toggle("availability-pending", needsMyAvailability);
@@ -1985,7 +2391,7 @@ function renderCenter() {
     els.centerDay.textContent = displayDay(day).full;
     els.centerTime.textContent = "참석자 선택을 조정해보세요";
     els.centerMeta.innerHTML = `
-      <div>선택한 ${selected.length}명 기준</div>
+      <div>필수 ${requiredPeople().length}명 기준${references.length ? ` · 참조 ${references.length}명 반영` : ""}</div>
       <div>${durationLabel()} 이상 겹치는 시간이 없어요</div>
     `;
     els.confirmBtn.textContent = "가능한 시간 없음";
@@ -1997,12 +2403,10 @@ function renderCenter() {
   const isRecommendation = sameCandidate(candidate, recommendation);
   const isConfirmed = isConfirmedCandidate(candidate);
   const stateLabel = isConfirmed
-    ? "확정된 회의 시간"
-    : state.availabilityFeedback
-    ? "내 가능 시간이 반영됐어요."
+    ? "확정됨"
     : isRecommendation
-    ? "추천 회의 시간"
-    : "선택한 회의 시간";
+    ? "추천 시간"
+    : "선택 시간";
   els.centerState.innerHTML = `
     <span>${stateLabel}</span>
     <b class="center-duration">${durationLabel()}</b>
@@ -2010,14 +2414,7 @@ function renderCenter() {
   els.centerDay.textContent = displayDay(day).full;
   els.centerTime.textContent = timeRangeLabel(candidate.start, candidate.end);
   els.centerMeta.innerHTML = `
-    <div>${isConfirmed ? "초대 준비 완료" : "모두 가능"}</div>
-    <div>${isConfirmed
-      ? `참석자 ${selected.length}명 · 링크 생성`
-      : state.availabilityFeedback
-      ? "추천 재계산"
-      : isRecommendation
-      ? "추천 시간"
-      : "직접 선택"}</div>
+    <div>${candidateSupportLine(candidate)}</div>
   `;
   els.confirmBtn.classList.toggle("confirmed", isConfirmed);
   els.actionRow.classList.toggle("availability-pending", needsMyAvailability);
@@ -2031,7 +2428,6 @@ function renderCenter() {
 function renderCandidates() {
   const candidates = generateCandidates();
   const recommendation = recommendedCandidate(candidates);
-  const selected = selectedPeople();
   const confirmedCandidate = confirmedCandidateForCurrentWeek();
 
   if (confirmedCandidate) {
@@ -2055,6 +2451,7 @@ function renderCandidates() {
         </div>
 
         <div class="confirmed-time-card">
+          <em>${meetingTitle()}</em>
           <span>${confirmedDay.full}</span>
           <strong>${timeRangeLabel(confirmedCandidate.start, confirmedCandidate.end)}</strong>
           <small>${attendees.names}</small>
@@ -2069,7 +2466,7 @@ function renderCandidates() {
         <div class="confirmed-actions">
           <button class="confirmed-action primary calendar-add-btn" type="button">
             ${iconMarkup(state.calendarAdded ? "check" : "calendar")}
-            ${state.calendarAdded ? "캘린더에 추가됨" : "Google Calendar에 추가"}
+            ${state.calendarAdded ? "캘린더에 저장됨" : "캘린더에 저장"}
           </button>
           <button class="confirmed-action share-copy-action" type="button">
             ${state.linkCopied ? iconMarkup("check") : ""}
@@ -2085,6 +2482,7 @@ function renderCandidates() {
   }
 
   if (!candidates.length) {
+    const required = requiredPeople();
     state.showAllCandidates = false;
     state.mobileCandidatesOpen = false;
     els.candidateToggle.hidden = true;
@@ -2095,7 +2493,7 @@ function renderCandidates() {
     els.mobileCandidateToggleLabel.textContent = "공통 후보 없음";
     els.candidateList.innerHTML = `
       <div class="empty">
-        선택한 ${selected.length}명이 동시에 가능한 ${durationLabel()} 구간이 없어요.<br />
+        필수 ${required.length}명이 동시에 가능한 ${durationLabel()} 구간이 없어요.<br />
         참석자 선택을 조정하거나 기간을 넓혀보세요.
       </div>
     `;
@@ -2144,7 +2542,7 @@ function renderCandidates() {
             ${isRecommendation ? `<span class="recommend-badge">추천</span>` : ""}
           </div>
           <strong class="candidate-time">${timeRangeLabel(candidate.start, candidate.end)}</strong>
-          <span class="candidate-status">선택한 참석자 모두 가능</span>
+          <span class="candidate-status">${candidateSupportLine(candidate)}</span>
         </div>
       </button>
     `;
@@ -2189,6 +2587,7 @@ function renderCandidates() {
 
 function renderReasons() {
   const candidate = state.selectedCandidate;
+  const fit = candidate ? candidateFit(candidate) : null;
   els.reasonToggle.setAttribute("aria-expanded", String(state.reasonsExpanded));
   els.reasonList.hidden = !state.reasonsExpanded;
 
@@ -2206,21 +2605,21 @@ function renderReasons() {
     return;
   }
 
-  els.reasonSummaryText.textContent = "가장 무리 없는 공통 가능 시간이에요.";
+  els.reasonSummaryText.textContent = candidateSupportLine(candidate);
   els.reasonList.innerHTML = `
     <div class="reason">
       <span class="reason-icon">${iconMarkup("check")}</span>
       <div>
-        <strong>선택한 참석자가 모두 비어 있어요</strong>
-        <span>${timeRangeLabel(candidate.start, candidate.end)}에는 선택된 모든 참석자가 참여할 수 있어요.</span>
+        <strong>필수 참석자가 모두 비어 있어요</strong>
+        <span>${timeRangeLabel(candidate.start, candidate.end)}에는 필수 참석자 ${fit.requiredCount}명이 모두 참여할 수 있어요.</span>
       </div>
     </div>
 
     <div class="reason">
       <span class="reason-icon">${iconMarkup("check")}</span>
       <div>
-        <strong>이번 주 공통 가능 시간 중 가장 무리 없는 시간이에요</strong>
-        <span>겹치는 후보들 중 업무 흐름이 끊기지 않는 시간대를 우선했어요.</span>
+        <strong>참조 참석자의 가능 여부도 반영했어요</strong>
+        <span>${fit.referenceCount ? `참조 ${fit.referenceAvailableCount}/${fit.referenceCount}명이 함께 가능한 후보를 더 높게 봤어요.` : "참조 참석자가 없어서 필수 참석자 기준으로만 추천했어요."}</span>
       </div>
     </div>
 
@@ -2228,7 +2627,7 @@ function renderReasons() {
       <span class="reason-icon">${iconMarkup("check")}</span>
       <div>
         <strong>점심 직후와 퇴근 직전 시간을 피해 추천했어요</strong>
-        <span>13:00 직후와 17:00에 가까운 후보는 우선순위를 낮췄어요.</span>
+        <span>13:00 직후와 17:00에 가까운 후보는 우선순위를 낮추고, 업무 흐름이 덜 끊기는 시간을 우선했어요.</span>
       </div>
     </div>
   `;
@@ -2246,6 +2645,8 @@ function openConfirmModal() {
   els.confirmModalIcon.innerHTML = iconMarkup("calendar");
   els.confirmModalTitle.textContent = "이 시간으로 회의를 확정할까요?";
   els.confirmModalMessage.textContent = "확정하면 선택한 참석자 기준의 회의 시간으로 저장됩니다.";
+  els.confirmTitleField.hidden = false;
+  els.confirmMeetingTitleInput.value = meetingTitle();
   els.confirmModalDate.textContent = day.long;
   els.confirmModalTime.textContent = timeRangeLabel(candidate.start, candidate.end);
   els.confirmModalAttendees.textContent = `참석자 ${attendees.length}명 · ${attendees.map(person => person.name).join(", ")}`;
@@ -2254,7 +2655,8 @@ function openConfirmModal() {
   els.confirmModalSubmit.textContent = "확정하기";
   els.confirmModal.hidden = false;
   document.body.classList.add("modal-open");
-  els.confirmModalSubmit.focus();
+  els.confirmMeetingTitleInput.focus();
+  els.confirmMeetingTitleInput.select();
 }
 
 function closeConfirmModal() {
@@ -2270,6 +2672,7 @@ function completeConfirmation() {
     return;
   }
 
+  state.meetingTitle = els.confirmMeetingTitleInput.value.trim() || DEFAULT_MEETING_TITLE;
   state.confirmedCandidate = {
     ...candidate,
     weekOffset: state.weekOffset
@@ -2281,10 +2684,11 @@ function completeConfirmation() {
   els.confirmModal.classList.add("success");
   els.confirmModalIcon.innerHTML = iconMarkup("check");
   els.confirmModalTitle.textContent = "캘린더 초대가 준비됐어요";
-  els.confirmModalMessage.textContent = `참석자 ${selectedPeople().length}명에게 공유 링크가 생성됐어요.`;
+  els.confirmModalMessage.textContent = `${meetingTitle()} · 참석자 ${selectedPeople().length}명에게 공유 링크가 생성됐어요.`;
+  els.confirmTitleField.hidden = true;
   els.confirmModalCancel.hidden = false;
   els.confirmModalCancel.textContent = "닫기";
-  els.confirmModalSubmit.textContent = "Google Calendar에 추가";
+  els.confirmModalSubmit.textContent = "캘린더에 저장";
   renderAll();
 }
 
@@ -2324,10 +2728,12 @@ function bindStaticEvents() {
   els.selectWorkHoursBtn.addEventListener("click", () => {
     state.availabilityDraft = blankAvailabilityDraft(null);
     state.availabilityDraftNotes = blankAvailabilityNotes();
+    applyDraftLunchPreference();
     renderAvailabilityGrid();
   });
 
   els.excludeLunchBtn.addEventListener("click", () => {
+    state.availabilityDraftAllowsLunch = false;
     state.availabilityPaintMode = "lunch";
     setDraftLunch("lunch");
     renderAvailabilityGrid();
@@ -2336,6 +2742,13 @@ function bindStaticEvents() {
   els.clearAvailabilityBtn.addEventListener("click", () => {
     state.availabilityDraft = blankAvailabilityDraft(null);
     state.availabilityDraftNotes = blankAvailabilityNotes();
+    applyDraftLunchPreference();
+    renderAvailabilityGrid();
+  });
+
+  els.allowLunchMeetingInput.addEventListener("change", event => {
+    state.availabilityDraftAllowsLunch = event.currentTarget.checked;
+    applyDraftLunchPreference();
     renderAvailabilityGrid();
   });
 

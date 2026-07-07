@@ -3,6 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="선택한 참석자의 공통 가능 시간을 시각화하고 최적의 회의 시간을 추천하는 UX/UI 프로토타입" />
+  <meta property="og:title" content="MeetFit - 회의 시간 찾기" />
+  <meta property="og:description" content="선택한 참석자의 공통 가능 시간을 시각화하고 최적의 회의 시간을 추천하는 UX/UI 프로토타입" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="MeetFit" />
   <title>MeetFit - 회의 시간 찾기</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="stylesheet" href="styles.css" />
@@ -80,15 +85,13 @@
         <div class="summary-card">
           <div class="summary-row">
             <span class="summary-label"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>기준 참석자</span>
-            <strong id="selectedSummary">선택한 4명 기준</strong>
+            <strong id="selectedSummary">필수 4명 기준</strong>
           </div>
           <div class="summary-row">
             <span class="summary-label"><svg class="ui-icon" aria-hidden="true"><use href="#icon-clock"></use></svg>회의 길이</span>
             <div class="duration-control" id="durationControl" aria-label="회의 길이 선택">
-              <button class="duration-option" type="button" data-duration="30">30분</button>
-              <button class="duration-option active" type="button" data-duration="60">1시간</button>
-              <button class="duration-option" type="button" data-duration="90">1.5시간</button>
-              <button class="duration-option" type="button" data-duration="120">2시간</button>
+              <button class="duration-option active" type="button" data-duration="30">30분</button>
+              <button class="duration-option" type="button" data-duration="60">1시간</button>
             </div>
           </div>
           <div class="summary-row">
@@ -122,12 +125,14 @@
           >
             <span>
               <strong>표시 기준</strong>
-              <small>가능 시간 표시 기준</small>
+              <small>파란 띠 = 공통 가능 시간 · 진한 파랑 = 추천 시간</small>
             </span>
             <i aria-hidden="true"></i>
           </button>
           <p id="displayGuideBody" hidden>
-            사람별 가능 시간은 낮은 채도로 표시되고, 선택한 참석자들이 동시에 비어 있는 시간은 파란 띠로 연결되어 보여요. 가장 적합한 시간은 더 진한 파랑으로 강조됩니다.
+            링 하나는 참석자 한 명을 뜻해요.<br />
+            사람별 가능 시간은 낮은 채도로, 공통 가능 시간은 파란 띠로 보여요.<br />
+            추천 시간은 더 진한 파랑으로 강조돼요.
           </p>
         </div>
       </aside>
@@ -135,20 +140,30 @@
       <section class="content">
         <div class="week-strip" id="weekStrip"></div>
 
+        <div class="flow-banner" aria-label="회의 시간 찾기 흐름">
+          <div class="flow-steps">
+            <span>참석자 선택</span>
+            <i aria-hidden="true"></i>
+            <span>공통 가능 시간 확인</span>
+            <i aria-hidden="true"></i>
+            <span>추천 시간 확정</span>
+          </div>
+          <p>참석자를 선택하면 공통 가능 시간이 계산되고, 가장 무리 없는 시간이 추천돼요.</p>
+        </div>
+
         <div class="chart-card">
           <div class="chart-stage">
-            <svg id="chartSvg" viewBox="0 0 720 720" aria-label="선택한 참석자의 회의 가능 시간 차트"></svg>
+            <svg id="chartSvg" viewBox="0 0 720 720" aria-label="필수 참석자의 공통 가능 시간 차트"></svg>
+          </div>
 
-            <div class="center-card" id="centerCard">
-              <div class="state" id="centerState">추천 회의 시간</div>
-              <h3 id="centerDay">수요일 7/2</h3>
-              <div class="time" id="centerTime">14:00 - 15:00</div>
-              <div class="meta" id="centerMeta">
-                <div>선택한 참석자 모두 가능</div>
-                <div>공통 가능 시간 중 가장 적합한 시간이에요</div>
-              </div>
-              <div class="center-switch-hint" id="centerSwitchHint" hidden></div>
+          <div class="center-card" id="centerCard">
+            <div class="state" id="centerState">추천 회의 시간</div>
+            <h3 id="centerDay">수요일 7/2</h3>
+            <div class="time" id="centerTime">14:00 - 15:00</div>
+            <div class="meta" id="centerMeta">
+              <div>필수 4명 모두 가능 · 점심/퇴근 직전 제외</div>
             </div>
+            <div class="center-switch-hint" id="centerSwitchHint" hidden></div>
           </div>
 
           <div class="entry-feedback" id="entryFeedback" aria-live="polite">
@@ -166,7 +181,7 @@
 
           <div class="chart-hint" id="chartHint">
             <span class="chart-hint-dot"></span>
-            <span>파란 띠가 연결된 구간은 선택한 참석자가 동시에 비어 있는 시간이에요.</span>
+            <span>파란 띠 = 공통 가능 시간 · 진한 파랑 = 추천 시간</span>
           </div>
 
           <aside class="schedule-detail" id="scheduleDetail" aria-live="polite" hidden>
@@ -266,6 +281,17 @@
       <h2 id="confirmModalTitle">이 시간으로 회의를 확정할까요?</h2>
       <p id="confirmModalMessage">선택한 참석자에게 확정된 회의 시간이 공유됩니다.</p>
 
+      <label class="modal-meeting-title-field" id="confirmTitleField">
+        <span>회의 이름</span>
+        <input
+          id="confirmMeetingTitleInput"
+          type="text"
+          maxlength="36"
+          autocomplete="off"
+          value="신규 온보딩 플로우 개선 회의"
+        />
+      </label>
+
       <div class="modal-meeting-time">
         <span id="confirmModalDate"></span>
         <strong id="confirmModalTime"></strong>
@@ -293,6 +319,10 @@
         <div>
           <span class="availability-kicker">시간 등록</span>
           <h2 id="availabilityModalTitle">내 가능 시간</h2>
+          <p class="availability-criteria">
+            <span>추천 기준</span>
+            <strong id="availabilityDurationBadge">30분</strong>
+          </p>
         </div>
       </div>
 
@@ -302,6 +332,15 @@
         <button class="quick-action" id="clearAvailabilityBtn" type="button">입력 지우기</button>
         <button class="quick-action ghost" id="calendarSyncBtn" type="button" disabled>캘린더 연동</button>
       </div>
+
+      <label class="lunch-option">
+        <input id="allowLunchMeetingInput" type="checkbox">
+        <span class="lunch-option-check" aria-hidden="true"></span>
+        <span class="lunch-option-copy">
+          <strong>점심시간도 후보에 포함</strong>
+          <small>간단한 회의가 가능할 때 체크</small>
+        </span>
+      </label>
 
       <div class="availability-guide" aria-label="시간 상태">
         <button class="paint-choice active" type="button" data-paint-mode="meeting"><i class="guide-dot meeting"></i>회의</button>
