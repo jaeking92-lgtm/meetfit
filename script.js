@@ -9,6 +9,7 @@ const LUNCH_END = 13 * 60 - START_OF_DAY;
 const POST_LUNCH_END = 14 * 60 - START_OF_DAY;
 const AVAILABILITY_STEP = 30;
 const AVAILABILITY_SLOT_COUNT = WORK_MINUTES / AVAILABILITY_STEP;
+const MEETING_SHARE_URL = "meetfit.app/m/ob-2026-flow";
 
 function iconMarkup(name, className = "ui-icon") {
   return `<svg class="${className}" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
@@ -304,11 +305,16 @@ const state = {
   reasonsExpanded: false,
   displayGuideExpanded: false,
   availabilityFeedback: false,
-  entryFeedbackState: "calculating"
+  entryFeedbackState: "calculating",
+  linkCopied: false,
+  calendarAdded: false,
+  shareUpdatedText: "마지막 업데이트 2분 전"
 };
 
 const els = {
   availabilityEntryBtn: document.getElementById("availabilityEntryBtn"),
+  copyLinkBtn: document.getElementById("copyLinkBtn"),
+  shareUpdated: document.getElementById("shareUpdated"),
   participantList: document.getElementById("participantList"),
   weekStrip: document.getElementById("weekStrip"),
   chartSvg: document.getElementById("chartSvg"),
@@ -408,6 +414,21 @@ function minutesToLabel(value) {
 
 function timeRangeLabel(start, end) {
   return `${minutesToLabel(start)} - ${minutesToLabel(end)}`;
+}
+
+function confirmedCandidateForCurrentWeek() {
+  return state.confirmedCandidate &&
+    state.confirmedCandidate.weekOffset === state.weekOffset
+    ? state.confirmedCandidate
+    : null;
+}
+
+function attendeeSummary() {
+  const attendees = selectedPeople();
+  return {
+    count: attendees.length,
+    names: attendees.map(person => person.name).join(", ")
+  };
 }
 
 function blankAvailabilityDraft(value = false) {
@@ -895,6 +916,47 @@ function renderAvailabilityEntry() {
       ? "내 가능 시간이 반영됐어요."
       : "저장된 내 시간을 기준으로 추천 중"
     : "내 시간이 필요할 때만 조정";
+}
+
+function renderShareStatus() {
+  if (!els.copyLinkBtn || !els.shareUpdated) return;
+
+  els.copyLinkBtn.textContent = state.linkCopied ? "복사됨" : "링크 복사";
+  els.shareUpdated.textContent = state.shareUpdatedText;
+}
+
+function copyMeetingLink() {
+  const fullUrl = `https://${MEETING_SHARE_URL}`;
+
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(fullUrl).catch(() => {});
+  } else {
+    const textarea = document.createElement("textarea");
+    textarea.value = fullUrl;
+    textarea.setAttribute("readonly", "");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    textarea.remove();
+  }
+
+  state.linkCopied = true;
+  renderShareStatus();
+  renderCandidates();
+
+  setTimeout(() => {
+    state.linkCopied = false;
+    renderShareStatus();
+    renderCandidates();
+  }, 1600);
+}
+
+function addToCalendar() {
+  state.calendarAdded = true;
+  state.shareUpdatedText = "방금 업데이트됨";
+  renderAll();
 }
 
 function renderEntryFeedback() {
@@ -1447,7 +1509,8 @@ function renderCenter() {
   const dayCandidates = candidates
     .filter(item => item.day === state.selectedDay)
     .sort((a, b) => a.start - b.start);
-  const canSwitch = Boolean(candidate && dayCandidates.length > 1);
+  const isCurrentConfirmed = Boolean(candidate && isConfirmedCandidate(candidate));
+  const canSwitch = Boolean(candidate && !isCurrentConfirmed && dayCandidates.length > 1);
 
   els.centerCard.classList.toggle("switchable", canSwitch);
   els.centerCard.classList.toggle("saved-feedback", Boolean(candidate && state.availabilityFeedback));
@@ -1502,8 +1565,10 @@ function renderCenter() {
   els.centerDay.textContent = displayDay(day).full;
   els.centerTime.textContent = timeRangeLabel(candidate.start, candidate.end);
   els.centerMeta.innerHTML = `
-    <div>선택한 참석자 모두 가능</div>
-    <div>${state.availabilityFeedback
+    <div>${isConfirmed ? "캘린더 초대가 준비됐어요" : "선택한 참석자 모두 가능"}</div>
+    <div>${isConfirmed
+      ? `참석자 ${selected.length}명에게 공유 링크 생성`
+      : state.availabilityFeedback
       ? "추천 시간을 다시 계산했어요"
       : isRecommendation
       ? "공통 가능 시간 중 가장 적합한 시간이에요"
@@ -1513,7 +1578,7 @@ function renderCenter() {
   els.actionRow.classList.toggle("availability-pending", needsMyAvailability);
   els.confirmBtn.classList.toggle("soft-priority", needsMyAvailability && !isConfirmed);
   els.confirmBtn.innerHTML = isConfirmed
-    ? `${iconMarkup("check")} ${timeRangeLabel(candidate.start, candidate.end)} 회의 확정됨`
+    ? `${iconMarkup("check")} ${timeRangeLabel(candidate.start, candidate.end)} 확정됨`
     : `${iconMarkup("calendar")} ${timeRangeLabel(candidate.start, candidate.end)}으로 확정하기`;
   els.confirmBtn.disabled = isConfirmed;
 }
@@ -1522,6 +1587,57 @@ function renderCandidates() {
   const candidates = generateCandidates();
   const recommendation = recommendedCandidate(candidates);
   const selected = selectedPeople();
+  const confirmedCandidate = confirmedCandidateForCurrentWeek();
+
+  if (confirmedCandidate) {
+    const confirmedDay = displayDay(confirmedCandidate.day);
+    const attendees = attendeeSummary();
+
+    state.showAllCandidates = false;
+    state.mobileCandidatesOpen = false;
+    els.candidateToggle.hidden = true;
+    els.candidateToggle.setAttribute("aria-expanded", "false");
+    els.candidatePanelBody.classList.remove("open");
+    els.mobileCandidateToggle.disabled = false;
+    els.mobileCandidateToggle.setAttribute("aria-expanded", "false");
+    els.mobileCandidateToggleLabel.textContent = "확정된 회의 보기";
+    els.candidateList.innerHTML = `
+      <section class="confirmed-panel" aria-label="확정된 회의">
+        <div class="confirmed-panel-head">
+          <span class="confirmed-kicker">확정된 회의</span>
+          <strong>캘린더 초대가 준비됐어요</strong>
+          <p>참석자 ${attendees.count}명에게 공유 링크가 생성됐어요.</p>
+        </div>
+
+        <div class="confirmed-time-card">
+          <span>${confirmedDay.full}</span>
+          <strong>${timeRangeLabel(confirmedCandidate.start, confirmedCandidate.end)}</strong>
+          <small>${attendees.names}</small>
+        </div>
+
+        <div class="share-card">
+          <span class="share-card-label">공유 링크</span>
+          <strong>${MEETING_SHARE_URL}</strong>
+          <small>${state.shareUpdatedText}</small>
+        </div>
+
+        <div class="confirmed-actions">
+          <button class="confirmed-action primary calendar-add-btn" type="button">
+            ${iconMarkup(state.calendarAdded ? "check" : "calendar")}
+            ${state.calendarAdded ? "캘린더에 추가됨" : "Google Calendar에 추가"}
+          </button>
+          <button class="confirmed-action share-copy-action" type="button">
+            ${state.linkCopied ? iconMarkup("check") : ""}
+            ${state.linkCopied ? "링크 복사됨" : "링크 복사"}
+          </button>
+        </div>
+      </section>
+    `;
+
+    els.candidateList.querySelector(".share-copy-action")?.addEventListener("click", copyMeetingLink);
+    els.candidateList.querySelector(".calendar-add-btn")?.addEventListener("click", addToCalendar);
+    return;
+  }
 
   if (!candidates.length) {
     state.showAllCandidates = false;
@@ -1692,6 +1808,7 @@ function openConfirmModal() {
   els.confirmModalTime.textContent = timeRangeLabel(candidate.start, candidate.end);
   els.confirmModalAttendees.textContent = `참석자 ${attendees.length}명 · ${attendees.map(person => person.name).join(", ")}`;
   els.confirmModalCancel.hidden = false;
+  els.confirmModalCancel.textContent = "취소";
   els.confirmModalSubmit.textContent = "확정하기";
   els.confirmModal.hidden = false;
   document.body.classList.add("modal-open");
@@ -1715,19 +1832,23 @@ function completeConfirmation() {
     ...candidate,
     weekOffset: state.weekOffset
   };
+  state.calendarAdded = false;
+  state.shareUpdatedText = "방금 업데이트됨";
   state.confirmModalStep = "success";
 
   els.confirmModal.classList.add("success");
   els.confirmModalIcon.innerHTML = iconMarkup("check");
-  els.confirmModalTitle.textContent = "회의 시간이 확정됐어요";
-  els.confirmModalMessage.textContent = "프로토타입 일정에 회의 시간이 저장되었습니다.";
-  els.confirmModalCancel.hidden = true;
-  els.confirmModalSubmit.textContent = "완료";
-  renderCenter();
+  els.confirmModalTitle.textContent = "캘린더 초대가 준비됐어요";
+  els.confirmModalMessage.textContent = `참석자 ${selectedPeople().length}명에게 공유 링크가 생성됐어요.`;
+  els.confirmModalCancel.hidden = false;
+  els.confirmModalCancel.textContent = "닫기";
+  els.confirmModalSubmit.textContent = "Google Calendar에 추가";
+  renderAll();
 }
 
 function bindStaticEvents() {
   els.scheduleDetailClose.addEventListener("click", hideScheduleDetail);
+  els.copyLinkBtn.addEventListener("click", copyMeetingLink);
   els.availabilityEntryBtn.addEventListener("click", openAvailabilityModal);
   els.availabilityModalClose.addEventListener("click", closeAvailabilityModal);
   els.availabilityCancelBtn.addEventListener("click", closeAvailabilityModal);
@@ -1802,6 +1923,7 @@ function bindStaticEvents() {
     if (state.confirmModalStep === "confirm") {
       completeConfirmation();
     } else {
+      addToCalendar();
       closeConfirmModal();
     }
   });
@@ -1834,6 +1956,7 @@ function renderAll() {
   renderAvailabilityEntry();
   renderDisplayGuide();
   renderEntryFeedback();
+  renderShareStatus();
 }
 
 bindStaticEvents();

@@ -85,6 +85,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 18px;
   background: rgba(255, 255, 255, 0.78);
   backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--line);
@@ -97,6 +98,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 0 0 auto;
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -116,7 +118,52 @@ button:focus-visible {
 .top-actions {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
   gap: 10px;
+}
+
+.share-status {
+  min-width: 0;
+  flex: 1 1 auto;
+  max-width: 560px;
+  height: 42px;
+  padding: 0 6px 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.66);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.share-link {
+  min-width: 0;
+  color: var(--text);
+  font-weight: 760;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share-copy-btn {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 10px;
+  color: var(--blue);
+  background: var(--blue-soft);
+  font-size: 12px;
+  font-weight: 760;
+  flex: 0 0 auto;
+}
+
+.share-updated {
+  color: var(--sub);
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .top-btn {
@@ -1389,6 +1436,118 @@ button:focus-visible {
   line-height: 1.35;
 }
 
+.confirmed-panel {
+  padding: 18px;
+  border: 1px solid rgba(37, 99, 235, 0.24);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff, #f7faff);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.08);
+  display: grid;
+  gap: 14px;
+}
+
+.confirmed-panel-head {
+  display: grid;
+  gap: 6px;
+}
+
+.confirmed-kicker {
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.confirmed-panel-head strong {
+  color: var(--text);
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -0.04em;
+}
+
+.confirmed-panel-head p {
+  margin: 0;
+  color: var(--sub);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.confirmed-time-card,
+.share-card {
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.76);
+  display: grid;
+  gap: 5px;
+}
+
+.confirmed-time-card span,
+.share-card-label,
+.share-card small {
+  color: var(--sub);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.confirmed-time-card strong {
+  color: var(--blue);
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+}
+
+.confirmed-time-card small {
+  overflow: hidden;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share-card strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.confirmed-actions {
+  display: grid;
+  gap: 9px;
+}
+
+.confirmed-action {
+  width: 100%;
+  height: 46px;
+  border-radius: 14px;
+  border: 1px solid var(--line-strong);
+  background: white;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 760;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.confirmed-action.primary {
+  color: white;
+  border-color: var(--blue);
+  background: var(--blue);
+  box-shadow: 0 12px 22px rgba(37, 99, 235, 0.18);
+}
+
+.confirmed-action .ui-icon {
+  width: 17px;
+  height: 17px;
+  stroke-width: 2.1;
+}
+
 .reason-box {
   margin-top: 20px;
   padding-top: 16px;
@@ -2401,6 +2560,10 @@ body.modal-open {
     grid-column: 1 / -1;
   }
 
+  .aside .confirmed-panel {
+    grid-column: 1 / -1;
+  }
+
   .aside .candidate-group-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2413,6 +2576,26 @@ body.modal-open {
 @media (max-width: 880px) {
   .top-actions {
     display: none;
+  }
+
+  .topbar {
+    padding: 0 18px;
+    gap: 12px;
+  }
+
+  .share-status {
+    height: 38px;
+    padding-left: 11px;
+    gap: 7px;
+  }
+
+  .share-updated {
+    display: none;
+  }
+
+  .share-copy-btn {
+    height: 28px;
+    padding: 0 8px;
   }
 
   .layout {
@@ -2667,5 +2850,30 @@ body.modal-open {
 
   .modal-actions {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .topbar {
+    padding: 0 14px;
+  }
+
+  .brand span {
+    display: none;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    border-radius: 13px;
+  }
+
+  .share-status {
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  .share-copy-btn {
+    padding: 0 9px;
   }
 }
