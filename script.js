@@ -2029,7 +2029,6 @@ function renderChart() {
   const innerRadius = outerRadius - (ringCount - 1) * (ringWidth + gap);
   const innerEdge = innerRadius - ringWidth / 2;
   const outerEdge = outerRadius + ringWidth / 2;
-  const requiredRingCount = selected.filter(person => person.type !== "참조").length || ringCount;
   const indexDotRadius = Math.max(8, Math.min(12, ringWidth * 0.55));
   const common = commonIntervalsForDay(state.selectedDay);
   const confirmedCandidate = confirmedCandidateForCurrentWeek();
@@ -2039,28 +2038,6 @@ function renderChart() {
   const confirmedRange = confirmedCandidate?.day === state.selectedDay
     ? [confirmedCandidate.start, confirmedCandidate.end]
     : null;
-  const innerEdgeForRingCount = count => {
-    const coveredRadius = outerRadius - (count - 1) * (ringWidth + gap);
-    return coveredRadius - ringWidth / 2;
-  };
-  const ringEdgesForIndex = index => {
-    const radius = outerRadius - index * (ringWidth + gap);
-    return {
-      inner: radius - ringWidth / 2,
-      outer: radius + ringWidth / 2
-    };
-  };
-  const isAvailableForRange = (person, start, end) =>
-    availabilityFor(person, state.selectedDay).some(([availableStart, availableEnd]) =>
-      availableStart <= start && availableEnd >= end
-    );
-  const requiredInnerEdge = innerEdgeForRingCount(requiredRingCount);
-  const referenceRingIndexesForRange = (start, end) =>
-    selected
-      .map((person, index) => ({ person, index }))
-      .filter(({ index }) => index >= requiredRingCount)
-      .filter(({ person }) => isAvailableForRange(person, start, end))
-      .map(({ index }) => index);
 
   svg.style.setProperty("--ring-width", `${ringWidth}px`);
 
@@ -2201,7 +2178,7 @@ function renderChart() {
     });
   });
 
-  const appendCommonBand = (segment, inner, outer, extraClass = "") => {
+  const appendCommonBand = (segment, inner, outer) => {
     const candidate = candidateFromChartRange(segment.start, segment.end);
     const band = createSvg("path", {
       d: describeAnnularSector(
@@ -2212,7 +2189,7 @@ function renderChart() {
         angleForMinute(segment.start),
         angleForMinute(segment.end)
       ),
-      class: `common-band ${segment.type} ${extraClass}`.trim(),
+      class: `common-band ${segment.type}`,
       tabindex: candidate ? "0" : "-1",
       role: candidate ? "button" : "presentation",
       "aria-label": candidate
@@ -2240,12 +2217,7 @@ function renderChart() {
 
   common.forEach(([start, end]) => {
     const baseSegment = { start, end, type: "common" };
-    appendCommonBand(baseSegment, requiredInnerEdge, outerEdge);
-
-    referenceRingIndexesForRange(start, end).forEach(index => {
-      const { inner, outer } = ringEdgesForIndex(index);
-      appendCommonBand(baseSegment, inner, outer, "reference-band");
-    });
+    appendCommonBand(baseSegment, innerEdge, outerEdge);
 
     [
       selectedRange ? { start: selectedRange[0], end: selectedRange[1], type: "selected" } : null,
@@ -2260,38 +2232,18 @@ function renderChart() {
         end: overlayEnd,
         type: segment.type
       };
-      appendCommonBand(overlaySegment, requiredInnerEdge, outerEdge);
-
-      referenceRingIndexesForRange(overlayStart, overlayEnd).forEach(index => {
-        const { inner, outer } = ringEdgesForIndex(index);
-        appendCommonBand(overlaySegment, inner, outer, "reference-band");
-      });
+      appendCommonBand(overlaySegment, innerEdge, outerEdge);
     });
 
-    appendThirtyMinuteDividers(svg, start, end, requiredInnerEdge, outerEdge);
+    appendThirtyMinuteDividers(svg, start, end, innerEdge, outerEdge);
   });
 
   if (confirmedRange) {
     svg.appendChild(createConfirmedMeetingLayer(
       confirmedCandidate,
-      requiredInnerEdge,
+      innerEdge,
       outerEdge
     ));
-
-    referenceRingIndexesForRange(confirmedCandidate.start, confirmedCandidate.end).forEach(index => {
-      const { inner, outer } = ringEdgesForIndex(index);
-      svg.appendChild(createSvg("path", {
-        d: describeAnnularSector(
-          CHART.cx,
-          CHART.cy,
-          inner,
-          outer,
-          angleForMinute(confirmedCandidate.start),
-          angleForMinute(confirmedCandidate.end)
-        ),
-        class: "confirmed-meeting-band confirmed-reference-band"
-      }));
-    });
   }
 
   selected.forEach((person, index) => {

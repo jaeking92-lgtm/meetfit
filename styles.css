@@ -1986,16 +1986,6 @@ button:focus-visible {
   filter: drop-shadow(0 12px 18px rgba(29, 78, 216, 0.26));
 }
 
-.common-band.reference-band {
-  fill: rgba(37, 99, 235, 0.46);
-  opacity: 0.94;
-}
-
-.common-band.reference-band.selected {
-  fill: rgba(29, 78, 216, 0.78);
-  opacity: 1;
-}
-
 .common-band.confirmed-base {
   fill: rgba(16, 185, 129, 0.24);
   opacity: 1;
@@ -2028,11 +2018,6 @@ button:focus-visible {
   filter:
     drop-shadow(0 12px 18px rgba(16, 185, 129, 0.24))
     drop-shadow(0 0 0 rgba(255, 255, 255, 0));
-}
-
-.confirmed-reference-band {
-  fill: rgba(16, 185, 129, 0.7);
-  pointer-events: none;
 }
 
 .confirmed-meeting-label-path {
