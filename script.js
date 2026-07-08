@@ -79,7 +79,6 @@ const people = [
     id: "p1",
     name: "김재혁",
     role: "UXUI 디자이너",
-    type: "필수",
     isMe: true,
     initial: "김",
     color: "#4F8DF7",
@@ -107,7 +106,6 @@ const people = [
     id: "p2",
     name: "김민수",
     role: "프로덕트 매니저",
-    type: "필수",
     initial: "김",
     color: "#36B37E",
     schedule: {
@@ -135,7 +133,6 @@ const people = [
     id: "p3",
     name: "박서연",
     role: "프론트엔드 엔지니어",
-    type: "필수",
     initial: "박",
     color: "#FF8B3D",
     schedule: {
@@ -161,7 +158,6 @@ const people = [
     id: "p4",
     name: "정우진",
     role: "프로덕트 데이터 분석가",
-    type: "필수",
     initial: "정",
     color: "#8B6FE8",
     schedule: {
@@ -191,7 +187,6 @@ const people = [
     id: "p5",
     name: "최은지",
     role: "그로스 마케터",
-    type: "참조",
     initial: "최",
     color: "#11A7A7",
     schedule: {
@@ -218,7 +213,6 @@ const people = [
     id: "p6",
     name: "이재훈",
     role: "고객 성공 매니저",
-    type: "참조",
     initial: "이",
     color: "#FF5C7A",
     schedule: {
@@ -280,8 +274,6 @@ const state = {
 
 const els = {
   availabilityEntryBtn: document.getElementById("availabilityEntryBtn"),
-  copyLinkBtn: document.getElementById("copyLinkBtn"),
-  shareUpdated: document.getElementById("shareUpdated"),
   participantList: document.getElementById("participantList"),
   weekStrip: document.getElementById("weekStrip"),
   chartSvg: document.getElementById("chartSvg"),
@@ -375,19 +367,8 @@ function selectedPeople() {
   return people.filter(person => state.selectedIds.includes(person.id));
 }
 
-function requiredPeople() {
-  const selected = selectedPeople();
-  const required = selected.filter(person => person.type !== "참조");
-  return required.length ? required : selected;
-}
-
-function referencePeople() {
-  const selected = selectedPeople();
-  const hasRequired = selected.some(person => person.type !== "참조");
-
-  if (!hasRequired) return [];
-
-  return selected.filter(person => person.type === "참조");
+function availabilityPeople() {
+  return selectedPeople();
 }
 
 function displayDay(dayOrKey) {
@@ -748,8 +729,7 @@ function scheduleTone(item = {}) {
 
 function scheduleBlocksMeeting(item = {}) {
   if (item.isGlobal) return true;
-  if (item.importance) return item.importance === "hard";
-  return ["vacation", "critical", "external", "approval"].includes(scheduleTone(item));
+  return item.importance !== "optional";
 }
 
 function scheduleStroke(person, item) {
@@ -878,6 +858,22 @@ function ringLayout(ringCount) {
     ringWidth: step - gap,
     gap
   };
+}
+
+function ringEdgesForIndexes(indexes, outerRadius, ringWidth, gap) {
+  if (!indexes.length) {
+    return {
+      innerEdge: outerRadius - ringWidth / 2,
+      outerEdge: outerRadius + ringWidth / 2
+    };
+  }
+
+  const firstIndex = Math.min(...indexes);
+  const lastIndex = Math.max(...indexes);
+  const outerEdge = outerRadius - firstIndex * (ringWidth + gap) + ringWidth / 2;
+  const innerEdge = outerRadius - lastIndex * (ringWidth + gap) - ringWidth / 2;
+
+  return { innerEdge, outerEdge };
 }
 
 function baseBlockedScheduleFor(person, dayKey) {
@@ -1448,13 +1444,6 @@ function renderAvailabilityEntry() {
     : "내 시간이 필요할 때만 조정";
 }
 
-function renderShareStatus() {
-  if (!els.copyLinkBtn || !els.shareUpdated) return;
-
-  els.copyLinkBtn.textContent = state.linkCopied ? "복사됨" : "링크 복사";
-  els.shareUpdated.textContent = state.shareUpdatedText;
-}
-
 function copyMeetingLink() {
   const fullUrl = `https://${MEETING_SHARE_URL}`;
 
@@ -1473,12 +1462,10 @@ function copyMeetingLink() {
   }
 
   state.linkCopied = true;
-  renderShareStatus();
   renderCandidates();
 
   setTimeout(() => {
     state.linkCopied = false;
-    renderShareStatus();
     renderCandidates();
   }, 1600);
 }
@@ -1610,17 +1597,13 @@ function canAttendCandidate(person, candidate) {
 }
 
 function candidateFit(candidate) {
-  const required = requiredPeople();
-  const references = referencePeople();
-  const referenceAvailable = references.filter(person => canAttendCandidate(person, candidate));
+  const selected = availabilityPeople();
   const avoidsLunch = !(candidate.start < POST_LUNCH_END && candidate.end > LUNCH_START);
   const avoidsLate = candidate.end <= COMFORT_END;
   const comfortable = candidate.start >= COMFORT_START && avoidsLunch && avoidsLate;
 
   return {
-    requiredCount: required.length,
-    referenceCount: references.length,
-    referenceAvailableCount: referenceAvailable.length,
+    selectedCount: selected.length,
     comfortable
   };
 }
@@ -1629,30 +1612,22 @@ function candidateSupportLine(candidate) {
   if (!candidate) return "";
 
   const fit = candidateFit(candidate);
-  const allSelectedCount = fit.requiredCount + fit.referenceCount;
-  const allReferencesAvailable = fit.referenceCount > 0 &&
-    fit.referenceAvailableCount === fit.referenceCount;
-  const primary = allReferencesAvailable || fit.referenceCount === 0
-    ? `선택한 ${allSelectedCount}명 모두 가능`
-    : `필수 ${fit.requiredCount}명 모두 가능`;
-  const reference = fit.referenceCount && !allReferencesAvailable
-    ? `참조 ${fit.referenceAvailableCount}/${fit.referenceCount}명 가능`
-    : null;
+  const primary = `선택한 ${fit.selectedCount}명 모두 가능`;
   const comfort = fit.comfortable
     ? "점심/퇴근 직전 제외"
     : "업무 흐름 기준 추천";
 
-  return [primary, reference, comfort].filter(Boolean).join(" · ");
+  return [primary, comfort].filter(Boolean).join(" · ");
 }
 
 function commonIntervalsForDay(dayKey) {
-  const selected = requiredPeople();
+  const selected = availabilityPeople();
 
   if (selected.length === 0) {
     return [];
   }
 
-  // 공통 시간은 필수 참석자의 강한 차단 일정만 제외한 빈 시간 교집합으로 만든다.
+  // 공통 시간은 선택된 참석자의 차단 일정을 모두 제외한 빈 시간 교집합으로 만든다.
   let common = availabilityFor(selected[0], dayKey).map(interval => [...interval]);
 
   selected.slice(1).forEach(person => {
@@ -1679,8 +1654,6 @@ function scoreCandidate(candidate) {
   let score = 400 - Math.abs(candidate.start - PREFERRED_START) * 0.3;
 
   score += dayPreference[candidate.day];
-  score += fit.referenceAvailableCount * 34;
-  if (fit.referenceCount && fit.referenceAvailableCount === fit.referenceCount) score += 22;
   if (candidate.start === PREFERRED_START) score += 40;
   if (candidate.start === 10 * 60 - START_OF_DAY) score += 50;
   if (overlapsPostLunch) score -= 200;
@@ -1806,13 +1779,20 @@ function isWithinChartRing(event) {
   if (!selected.length) return false;
 
   const { outerRadius, ringWidth, gap } = ringLayout(selected.length);
-  const innerRadius = outerRadius - (selected.length - 1) * (ringWidth + gap);
-  const innerEdge = innerRadius - ringWidth / 2 - 14;
-  const outerEdge = outerRadius + ringWidth / 2 + 14;
+  const commonPeopleIds = new Set(availabilityPeople().map(person => person.id));
+  const commonRingIndexes = selected
+    .map((person, index) => commonPeopleIds.has(person.id) ? index : null)
+    .filter(index => index !== null);
+  const { innerEdge, outerEdge } = ringEdgesForIndexes(
+    commonRingIndexes,
+    outerRadius,
+    ringWidth,
+    gap
+  );
   const { x, y } = chartPointFromEvent(event);
   const distance = Math.hypot(x - CHART.cx, y - CHART.cy);
 
-  return distance >= innerEdge && distance <= outerEdge;
+  return distance >= innerEdge - 14 && distance <= outerEdge + 14;
 }
 
 function candidateFromChartRange(rangeStart, rangeEnd, event = null) {
@@ -1898,16 +1878,10 @@ function cycleCenterCandidate() {
 
 function renderParticipants() {
   const selected = selectedPeople();
-  const required = requiredPeople();
-  const references = referencePeople();
 
   els.selectionCount.textContent = `선택 ${selected.length}/6`;
-  els.selectedSummary.textContent = references.length
-    ? `필수 ${required.length}명 · 참조 ${references.length}명`
-    : `필수 ${required.length}명 기준`;
-  els.asideDesc.textContent = references.length
-    ? `필수 ${required.length}명은 반드시 가능, 참조 ${references.length}명은 추천 점수에 반영됩니다.`
-    : `필수 ${required.length}명이 동시에 비어 있는 후보입니다.`;
+  els.selectedSummary.textContent = `선택 ${selected.length}명 기준`;
+  els.asideDesc.textContent = `선택한 ${selected.length}명이 동시에 비어 있는 후보입니다.`;
   els.durationOptions.forEach(button => {
     const active = Number(button.dataset.duration) === state.meetingLength;
     button.classList.toggle("active", active);
@@ -1918,7 +1892,8 @@ function renderParticipants() {
     const isChecked = state.selectedIds.includes(person.id);
     const selectedIndex = selected.findIndex(item => item.id === person.id);
     const ringLabel = isChecked ? `${selectedIndex + 1}번 링` : "후보 제외";
-    const optionalClass = person.type === "참조" ? "optional" : "";
+    const statusClass = isChecked ? "selected" : "unselected";
+    const statusLabel = isChecked ? "선택" : "미선택";
 
     return `
       <label class="participant ${isChecked ? "" : "inactive"}" style="--p-color: ${person.color}">
@@ -1934,7 +1909,7 @@ function renderParticipants() {
           </strong>
           <span>${person.role} · ${ringLabel}</span>
         </span>
-        <span class="badge ${optionalClass}">${person.type}</span>
+        <span class="badge ${statusClass}">${statusLabel}</span>
       </label>
     `;
   }).join("");
@@ -2029,6 +2004,12 @@ function renderChart() {
   const innerRadius = outerRadius - (ringCount - 1) * (ringWidth + gap);
   const innerEdge = innerRadius - ringWidth / 2;
   const outerEdge = outerRadius + ringWidth / 2;
+  const commonPeople = availabilityPeople();
+  const commonPeopleIds = new Set(commonPeople.map(person => person.id));
+  const commonRingIndexes = selected
+    .map((person, index) => commonPeopleIds.has(person.id) ? index : null)
+    .filter(index => index !== null);
+  const commonEdges = ringEdgesForIndexes(commonRingIndexes, outerRadius, ringWidth, gap);
   const indexDotRadius = Math.max(8, Math.min(12, ringWidth * 0.55));
   const common = commonIntervalsForDay(state.selectedDay);
   const confirmedCandidate = confirmedCandidateForCurrentWeek();
@@ -2217,7 +2198,7 @@ function renderChart() {
 
   common.forEach(([start, end]) => {
     const baseSegment = { start, end, type: "common" };
-    appendCommonBand(baseSegment, innerEdge, outerEdge);
+    appendCommonBand(baseSegment, commonEdges.innerEdge, commonEdges.outerEdge);
 
     [
       selectedRange ? { start: selectedRange[0], end: selectedRange[1], type: "selected" } : null,
@@ -2232,27 +2213,31 @@ function renderChart() {
         end: overlayEnd,
         type: segment.type
       };
-      appendCommonBand(overlaySegment, innerEdge, outerEdge);
+      appendCommonBand(overlaySegment, commonEdges.innerEdge, commonEdges.outerEdge);
     });
 
-    appendThirtyMinuteDividers(svg, start, end, innerEdge, outerEdge);
+    appendThirtyMinuteDividers(svg, start, end, commonEdges.innerEdge, commonEdges.outerEdge);
   });
 
   if (confirmedRange) {
     svg.appendChild(createConfirmedMeetingLayer(
       confirmedCandidate,
-      innerEdge,
-      outerEdge
+      commonEdges.innerEdge,
+      commonEdges.outerEdge
     ));
   }
 
+  const indexDotAngle = angleForMinute(-18);
+  const indexDotAnchorRadius = outerRadius - Math.max(0, selected.length - 1) * (ringWidth + gap);
+  const indexDotY = polar(CHART.cx, CHART.cy, indexDotAnchorRadius, indexDotAngle).y;
+
   selected.forEach((person, index) => {
     const radius = outerRadius - index * (ringWidth + gap);
-    const p = polar(CHART.cx, CHART.cy, radius, angleForMinute(-18));
+    const p = polar(CHART.cx, CHART.cy, radius, indexDotAngle);
 
     svg.appendChild(createSvg("circle", {
       cx: p.x,
-      cy: p.y,
+      cy: indexDotY,
       r: indexDotRadius,
       fill: person.color,
       class: "person-index-dot"
@@ -2260,7 +2245,7 @@ function renderChart() {
 
     const label = createSvg("text", {
       x: p.x,
-      y: p.y + 0.5,
+      y: indexDotY + 0.5,
       class: "person-index-label",
       style: `font-size: ${Math.max(9, indexDotRadius)}px`
     });
@@ -2283,22 +2268,20 @@ function renderCenter() {
   els.centerCard.classList.toggle("switchable", canSwitch);
   els.centerCard.classList.toggle("confirmed", isCurrentConfirmed);
   els.centerCard.classList.toggle("saved-feedback", false);
+  els.centerCard.classList.toggle("empty-state", !candidate);
   els.centerSwitchHint.hidden = !canSwitch;
   els.centerCard.tabIndex = canSwitch ? 0 : -1;
 
   if (canSwitch) {
     const currentIndex = dayCandidates.findIndex(item => sameCandidate(item, candidate));
     const displayIndex = currentIndex < 0 ? 1 : currentIndex + 1;
+    const nextCandidate = dayCandidates[(displayIndex % dayCandidates.length)];
     els.centerCard.setAttribute("role", "button");
     els.centerCard.setAttribute(
       "aria-label",
       `${displayDay(candidate.day).full} ${timeRangeLabel(candidate.start, candidate.end)}. 클릭하면 다음 공통 가능 시간으로 변경됩니다.`
     );
-    els.centerSwitchHint.innerHTML = `
-      ${iconMarkup("chevron-left", "ui-icon center-switch-arrow")}
-      <span>다른 시간 · ${displayIndex}/${dayCandidates.length}</span>
-      ${iconMarkup("chevron-right", "ui-icon center-switch-arrow")}
-    `;
+    els.centerSwitchHint.textContent = `다른 시간 ${displayIndex}/${dayCandidates.length} · ${timeRangeLabel(nextCandidate.start, nextCandidate.end)}`;
   } else {
     els.centerCard.removeAttribute("role");
     els.centerCard.removeAttribute("aria-label");
@@ -2306,7 +2289,7 @@ function renderCenter() {
 
   if (!candidate) {
     const day = days.find(item => item.key === state.selectedDay);
-    const references = referencePeople();
+    const selected = availabilityPeople();
     els.confirmBtn.classList.remove("confirmed");
     els.confirmBtn.classList.remove("soft-priority");
     els.actionRow.classList.toggle("availability-pending", needsMyAvailability);
@@ -2314,7 +2297,7 @@ function renderCenter() {
     els.centerDay.textContent = displayDay(day).full;
     els.centerTime.textContent = "참석자 선택을 조정해보세요";
     els.centerMeta.innerHTML = `
-      <div>필수 ${requiredPeople().length}명 기준${references.length ? ` · 참조 ${references.length}명 반영` : ""}</div>
+      <div>선택 ${selected.length}명 기준</div>
       <div>${durationLabel()} 이상 겹치는 시간이 없어요</div>
     `;
     els.confirmBtn.textContent = "가능한 시간 없음";
@@ -2405,7 +2388,7 @@ function renderCandidates() {
   }
 
   if (!candidates.length) {
-    const required = requiredPeople();
+    const selected = availabilityPeople();
     state.showAllCandidates = false;
     state.mobileCandidatesOpen = false;
     els.candidateToggle.hidden = true;
@@ -2416,7 +2399,7 @@ function renderCandidates() {
     els.mobileCandidateToggleLabel.textContent = "공통 후보 없음";
     els.candidateList.innerHTML = `
       <div class="empty">
-        필수 ${required.length}명이 동시에 가능한 ${durationLabel()} 구간이 없어요.<br />
+        선택한 ${selected.length}명이 동시에 가능한 ${durationLabel()} 구간이 없어요.<br />
         참석자 선택을 조정하거나 기간을 넓혀보세요.
       </div>
     `;
@@ -2533,16 +2516,16 @@ function renderReasons() {
     <div class="reason">
       <span class="reason-icon">${iconMarkup("check")}</span>
       <div>
-        <strong>필수 참석자가 모두 비어 있어요</strong>
-        <span>${timeRangeLabel(candidate.start, candidate.end)}에는 필수 참석자 ${fit.requiredCount}명이 모두 참여할 수 있어요.</span>
+        <strong>선택한 참석자가 모두 비어 있어요</strong>
+        <span>${timeRangeLabel(candidate.start, candidate.end)}에는 선택한 참석자 ${fit.selectedCount}명이 모두 참여할 수 있어요.</span>
       </div>
     </div>
 
     <div class="reason">
       <span class="reason-icon">${iconMarkup("check")}</span>
       <div>
-        <strong>참조 참석자의 가능 여부도 반영했어요</strong>
-        <span>${fit.referenceCount ? `참조 ${fit.referenceAvailableCount}/${fit.referenceCount}명이 함께 가능한 후보를 더 높게 봤어요.` : "참조 참석자가 없어서 필수 참석자 기준으로만 추천했어요."}</span>
+        <strong>선택 상태를 기준으로 계산했어요</strong>
+        <span>선택된 사람은 모두 같은 기준으로 포함하고, 미선택된 사람은 후보 계산에서 제외했어요.</span>
       </div>
     </div>
 
@@ -2618,7 +2601,6 @@ function completeConfirmation() {
 function bindStaticEvents() {
   els.scheduleDetailClose.addEventListener("click", hideScheduleDetail);
   els.chartSvg.addEventListener("click", handleChartFreeTimeClick);
-  els.copyLinkBtn.addEventListener("click", copyMeetingLink);
   els.durationOptions.forEach(button => {
     button.addEventListener("click", () => {
       setMeetingLength(Number(button.dataset.duration));
@@ -2772,7 +2754,6 @@ function renderAll() {
   renderAvailabilityEntry();
   renderDisplayGuide();
   renderEntryFeedback();
-  renderShareStatus();
 }
 
 bindStaticEvents();

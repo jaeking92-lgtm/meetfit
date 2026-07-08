@@ -64,12 +64,6 @@
         <span>MeetFit</span>
       </div>
 
-      <div class="share-status" aria-label="회의 공유 상태">
-        <span class="share-link">meetfit.app/m/ob-2026-flow</span>
-        <button class="share-copy-btn" id="copyLinkBtn" type="button">링크 복사</button>
-        <span class="share-updated" id="shareUpdated">마지막 업데이트 2분 전</span>
-      </div>
-
       <div class="top-actions">
         <button class="top-btn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-help"></use></svg>사용 가이드</button>
         <button class="top-btn secondary" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg>캘린더 연동</button>
@@ -85,7 +79,7 @@
         <div class="summary-card">
           <div class="summary-row">
             <span class="summary-label"><svg class="ui-icon" aria-hidden="true"><use href="#icon-users"></use></svg>기준 참석자</span>
-            <strong id="selectedSummary">필수 4명 기준</strong>
+            <strong id="selectedSummary">선택 4명 기준</strong>
           </div>
           <div class="summary-row">
             <span class="summary-label"><svg class="ui-icon" aria-hidden="true"><use href="#icon-clock"></use></svg>회의 길이</span>
@@ -153,7 +147,7 @@
 
         <div class="chart-card">
           <div class="chart-stage">
-            <svg id="chartSvg" viewBox="0 0 720 720" aria-label="필수 참석자의 공통 가능 시간 차트"></svg>
+            <svg id="chartSvg" viewBox="0 0 720 720" aria-label="선택한 참석자의 공통 가능 시간 차트"></svg>
           </div>
 
           <div class="center-card" id="centerCard">
@@ -161,7 +155,7 @@
             <h3 id="centerDay">수요일 7/2</h3>
             <div class="time" id="centerTime">14:00 - 15:00</div>
             <div class="meta" id="centerMeta">
-              <div>필수 4명 모두 가능 · 점심/퇴근 직전 제외</div>
+              <div>선택한 4명 모두 가능 · 점심/퇴근 직전 제외</div>
             </div>
             <div class="center-switch-hint" id="centerSwitchHint" hidden></div>
           </div>

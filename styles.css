@@ -52,6 +52,37 @@ button:focus-visible {
   outline-offset: 3px;
 }
 
+.summary-row,
+.participant,
+.tip,
+.day-btn,
+.flow-banner,
+.center-card,
+.center-card *,
+.chart-legend,
+.action-row,
+.primary-action,
+.secondary-action,
+.candidate,
+.candidate *,
+.reason-summary,
+.reason-summary *,
+.top-btn {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.primary-action,
+.secondary-action,
+.candidate-toggle,
+.mobile-candidate-toggle,
+.top-btn,
+.duration-option {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .icon-sprite {
   width: 0;
   height: 0;
@@ -120,50 +151,6 @@ button:focus-visible {
   align-items: center;
   flex: 0 0 auto;
   gap: 10px;
-}
-
-.share-status {
-  min-width: 0;
-  flex: 1 1 auto;
-  max-width: 560px;
-  height: 42px;
-  padding: 0 6px 0 14px;
-  border: 1px solid var(--line);
-  border-radius: 15px;
-  background: rgba(255, 255, 255, 0.66);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  color: #475569;
-  font-size: 13px;
-  font-weight: 650;
-}
-
-.share-link {
-  min-width: 0;
-  color: var(--text);
-  font-weight: 760;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.share-copy-btn {
-  height: 30px;
-  padding: 0 10px;
-  border-radius: 10px;
-  color: var(--blue);
-  background: var(--blue-soft);
-  font-size: 12px;
-  font-weight: 760;
-  flex: 0 0 auto;
-}
-
-.share-updated {
-  color: var(--sub);
-  font-size: 12px;
-  white-space: nowrap;
 }
 
 .top-btn {
@@ -567,7 +554,13 @@ button:focus-visible {
   border: 1px solid #e2e8f0;
 }
 
-.badge.optional {
+.badge.selected {
+  background: #eef4ff;
+  color: var(--blue);
+  border-color: #c7d8ff;
+}
+
+.badge.unselected {
   background: #f6f7f9;
   color: #64748b;
   border-color: #e2e8f0;
@@ -1084,8 +1077,9 @@ button:focus-visible {
 .center-card {
   position: absolute;
   left: clamp(22px, calc(50% - 308px), 34%);
-  bottom: clamp(66px, 8.8dvh, 96px);
+  bottom: clamp(81px, calc(8.8dvh + 15px), 111px);
   width: clamp(248px, 20.5vw, 292px);
+  min-height: 178px;
   height: 178px;
   margin: 0;
   padding: 20px;
@@ -1102,32 +1096,8 @@ button:focus-visible {
   grid-template-columns: 1fr;
   gap: 8px;
   align-content: center;
+  overflow: visible;
   z-index: 4;
-}
-
-.center-card::before {
-  content: "";
-  position: absolute;
-  right: -42px;
-  top: 40px;
-  width: 58px;
-  height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.42), rgba(37, 99, 235, 0));
-  pointer-events: none;
-}
-
-.center-card::after {
-  content: "";
-  position: absolute;
-  right: -50px;
-  top: 35px;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--blue);
-  box-shadow: 0 0 0 7px rgba(37, 99, 235, 0.1);
-  pointer-events: none;
 }
 
 .center-card.switchable {
@@ -1219,6 +1189,8 @@ button:focus-visible {
 
 .center-card .time {
   margin: 2px 0 0;
+  max-width: 100%;
+  overflow: hidden;
   color: #174fce;
   font-size: 31px;
   line-height: 1.2;
@@ -1226,6 +1198,36 @@ button:focus-visible {
   font-weight: 900;
   text-align: center;
   white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.center-card.empty-state .time {
+  max-width: 100%;
+  display: block;
+  overflow: visible;
+  font-size: clamp(16px, 1.35vw, 18px);
+  line-height: 1.28;
+  letter-spacing: -0.025em;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: normal;
+}
+
+.center-card.empty-state {
+  align-content: start;
+  gap: 7px;
+}
+
+.center-card.empty-state .meta {
+  margin-top: 2px;
+  min-height: 50px;
+  padding: 8px 12px;
+}
+
+.center-card.empty-state .meta div {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
 }
 
 .center-card .meta {
@@ -1249,30 +1251,31 @@ button:focus-visible {
 .center-card .meta div {
   display: -webkit-box;
   overflow: hidden;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
 .center-switch-hint {
+  position: absolute;
+  left: 50%;
+  bottom: -25px;
+  transform: translateX(-50%);
+  width: min(188px, calc(100% - 46px));
   justify-self: center;
-  margin-top: 4px;
-  padding: 7px 11px;
+  margin-top: 0;
+  padding: 6px 10px;
   border-radius: 999px;
   color: var(--blue);
   background: rgba(37, 99, 235, 0.09);
   font-size: 11px;
   font-weight: 850;
   line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.center-switch-arrow {
-  width: 13px;
-  height: 13px;
-  stroke-width: 2.2;
-  opacity: 0.72;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .center-switch-hint[hidden] {
@@ -3122,14 +3125,19 @@ body.modal-open {
 
   .center-card {
     left: clamp(18px, calc(50% - 284px), 32%);
-    bottom: clamp(62px, 8dvh, 84px);
+    bottom: clamp(77px, calc(8dvh + 15px), 99px);
     width: clamp(232px, 21vw, 270px);
+    min-height: 162px;
     height: 162px;
     padding: 17px;
   }
 
   .center-card .time {
     font-size: clamp(25px, 3dvh, 29px);
+  }
+
+  .center-card.empty-state .time {
+    font-size: clamp(15px, 1.55vw, 17px);
   }
 
   .flow-banner {
@@ -3211,21 +3219,6 @@ body.modal-open {
   .topbar {
     padding: 0 18px;
     gap: 12px;
-  }
-
-  .share-status {
-    height: 38px;
-    padding-left: 11px;
-    gap: 7px;
-  }
-
-  .share-updated {
-    display: none;
-  }
-
-  .share-copy-btn {
-    height: 28px;
-    padding: 0 8px;
   }
 
   .layout {
@@ -3375,17 +3368,16 @@ body.modal-open {
     text-align: center;
   }
 
-  .center-card::before,
-  .center-card::after {
-    display: none;
-  }
-
   .center-card.switchable:hover {
     transform: translateY(-2px);
   }
 
   .center-card .time {
     font-size: 26px;
+  }
+
+  .center-card.empty-state .time {
+    font-size: 18px;
   }
 
   .center-card .state {
@@ -3405,6 +3397,9 @@ body.modal-open {
 
   .center-switch-hint {
     grid-column: auto;
+    position: static;
+    width: auto;
+    transform: none;
     margin-top: 2px;
   }
 
@@ -3557,15 +3552,6 @@ body.modal-open {
     width: 36px;
     height: 36px;
     border-radius: 13px;
-  }
-
-  .share-status {
-    justify-content: flex-start;
-    max-width: none;
-  }
-
-  .share-copy-btn {
-    padding: 0 9px;
   }
 
   .summary-row {
