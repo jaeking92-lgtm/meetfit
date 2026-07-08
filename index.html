@@ -65,7 +65,7 @@
       </div>
 
       <div class="top-actions">
-        <button class="top-btn" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-help"></use></svg>사용 가이드</button>
+        <button class="top-btn" id="guideBtn" type="button" aria-haspopup="dialog" aria-controls="guideModal"><svg class="ui-icon" aria-hidden="true"><use href="#icon-help"></use></svg>사용 가이드</button>
         <button class="top-btn secondary" type="button"><svg class="ui-icon" aria-hidden="true"><use href="#icon-calendar"></use></svg>캘린더 연동</button>
         <div class="avatar-mini">J</div>
       </div>
@@ -261,6 +261,75 @@
         </div>
       </aside>
     </main>
+  </div>
+
+  <div class="modal-backdrop guide-backdrop" id="guideModal" hidden>
+    <section
+      class="guide-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="guideModalTitle"
+      aria-describedby="guideModalDesc"
+    >
+      <button class="modal-close" id="guideModalClose" type="button" aria-label="닫기"><svg class="ui-icon" aria-hidden="true"><use href="#icon-x"></use></svg></button>
+
+      <div class="guide-hero">
+        <span class="modal-icon guide-icon" aria-hidden="true"><svg class="ui-icon"><use href="#icon-help"></use></svg></span>
+        <div>
+          <span class="guide-kicker">MeetFit 사용 가이드</span>
+          <h2 id="guideModalTitle">회의 가능한 시간을 빠르게 찾는 방법</h2>
+          <p id="guideModalDesc">참석자를 고르면 공통으로 비어 있는 시간이 자동 계산되고, 가장 무리 없는 후보가 추천됩니다.</p>
+        </div>
+      </div>
+
+      <div class="guide-content">
+        <div class="guide-steps" aria-label="사용 순서">
+          <article class="guide-step">
+            <span>1</span>
+            <div>
+              <h3>참석자 선택</h3>
+              <p>왼쪽 목록에서 회의에 필요한 참석자를 체크하세요. 선택한 사람 기준으로 차트와 후보 시간이 즉시 다시 계산됩니다.</p>
+            </div>
+          </article>
+          <article class="guide-step">
+            <span>2</span>
+            <div>
+              <h3>회의 길이 조정</h3>
+              <p>30분 또는 1시간을 선택하면 해당 길이 이상 겹치는 시간만 후보로 남습니다.</p>
+            </div>
+          </article>
+          <article class="guide-step">
+            <span>3</span>
+            <div>
+              <h3>추천 시간 확인</h3>
+              <p>가운데 원형 차트의 파란 구간은 공통 가능 시간이고, 진한 파란 구간은 MeetFit이 우선 추천하는 시간입니다.</p>
+            </div>
+          </article>
+          <article class="guide-step">
+            <span>4</span>
+            <div>
+              <h3>후보 선택 후 확정</h3>
+              <p>오른쪽 후보 목록이나 차트의 추천 구간을 선택한 뒤, 하단의 추천 시간으로 확정하기 버튼을 누르세요.</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="guide-note-grid">
+          <section class="guide-note">
+            <h3>내 가능 시간 등록</h3>
+            <p>왼쪽의 내 가능 시간 등록하기에서 비어 있는 시간을 직접 조정할 수 있습니다. 회의, 집중업무, 출장, 휴가, 점심 상태를 칠해 일정 충돌을 더 정확히 반영하세요.</p>
+          </section>
+          <section class="guide-note">
+            <h3>색상 읽는 법</h3>
+            <p>개인 가능 시간은 연한 색, 모두가 가능한 시간은 파란색, 추천 시간은 더 진한 파란색으로 표시됩니다. 회색 구간은 이미 일정이 있는 시간입니다.</p>
+          </section>
+        </div>
+      </div>
+
+      <div class="guide-actions">
+        <button class="modal-submit" id="guideModalDone" type="button">확인했어요</button>
+      </div>
+    </section>
   </div>
 
   <div class="modal-backdrop" id="confirmModal" hidden>

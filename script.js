@@ -310,6 +310,10 @@ const els = {
   actionRow: document.getElementById("actionRow"),
   confirmBtn: document.getElementById("confirmBtn"),
   togglePersonalBtn: document.getElementById("togglePersonalBtn"),
+  guideBtn: document.getElementById("guideBtn"),
+  guideModal: document.getElementById("guideModal"),
+  guideModalClose: document.getElementById("guideModalClose"),
+  guideModalDone: document.getElementById("guideModalDone"),
   confirmModal: document.getElementById("confirmModal"),
   confirmModalClose: document.getElementById("confirmModalClose"),
   confirmModalIcon: document.getElementById("confirmModalIcon"),
@@ -2571,6 +2575,20 @@ function closeConfirmModal() {
   els.confirmBtn.focus();
 }
 
+function openGuideModal() {
+  els.guideModal.hidden = false;
+  document.body.classList.add("modal-open");
+  els.guideModalClose.focus();
+}
+
+function closeGuideModal() {
+  els.guideModal.hidden = true;
+  if (els.availabilityModal.hidden && els.confirmModal.hidden) {
+    document.body.classList.remove("modal-open");
+  }
+  els.guideBtn.focus();
+}
+
 function completeConfirmation() {
   const candidate = state.selectedCandidate;
   if (!candidate) {
@@ -2710,6 +2728,9 @@ function bindStaticEvents() {
   });
 
   els.confirmBtn.addEventListener("click", openConfirmModal);
+  els.guideBtn.addEventListener("click", openGuideModal);
+  els.guideModalClose.addEventListener("click", closeGuideModal);
+  els.guideModalDone.addEventListener("click", closeGuideModal);
   els.confirmModalClose.addEventListener("click", closeConfirmModal);
   els.confirmModalCancel.addEventListener("click", closeConfirmModal);
 
@@ -2728,6 +2749,12 @@ function bindStaticEvents() {
     }
   });
 
+  els.guideModal.addEventListener("click", event => {
+    if (event.target === els.guideModal) {
+      closeGuideModal();
+    }
+  });
+
   document.addEventListener("keydown", event => {
     if (event.key === "Escape" && !els.availabilityModal.hidden) {
       if (!els.noteModal.hidden) {
@@ -2737,6 +2764,8 @@ function bindStaticEvents() {
       }
     } else if (event.key === "Escape" && !els.confirmModal.hidden) {
       closeConfirmModal();
+    } else if (event.key === "Escape" && !els.guideModal.hidden) {
+      closeGuideModal();
     } else if (event.key === "Escape" && !els.scheduleDetail.hidden) {
       hideScheduleDetail();
     }
